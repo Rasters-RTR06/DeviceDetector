@@ -2,7 +2,7 @@
 
 ## JSON READER WRITER
 
-### WHY JASON FILE ?
+### WHY JSON FILE ?
 OUR MAIN REASON IS : 
 
 Configuration and Data Storage:
@@ -12,6 +12,35 @@ Data Storage: While not a full-fledged database, JSON can be used for simple dat
 Flexibility and Structure:
 Hierarchical Data: JSON can represent complex, hierarchical data structures using nested objects and arrays. This allows UIs to handle data with varying levels of complexity.   
 Dynamic Data: JSON's flexibility makes it suitable for handling dynamic data that may change frequently.
+
+### OUR Structure
+```json
+  {
+	"USB Device":	[{
+			"name":	"Pendrive",
+			"config":	"32GB"
+		}, {
+			"name":	"Charging Device",
+			"config":	"Fast Charger"
+		}],
+	"Monitor":	[{
+			"name":	"LG",
+			"config":	"1080p, 60Hz"
+		}, {
+			"name":	"Samsung",
+			"config":	"4K, 144Hz"
+		}],
+	"Bluetooth Device":	[{
+			"name":	"Mouse",
+			"config":	"Wireless"
+		}],
+	"Audio Device":	[{
+			"name":	"Headphone",
+			"config":	"Stereo, Noise Cancelling"
+		}]
+}
+  ```
+
 
 ### Inspiration
 https://github.com/DaveGamble/cJSON
