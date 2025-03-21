@@ -57,7 +57,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	wndclass.cbWndExtra = 0;
 	wndclass.lpfnWndProc = WndProc;
 	wndclass.hInstance = hInstance;
-	wndclass.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	wndclass.hbrBackground = (HBRUSH)GetStockObject(GRAY_BRUSH);
 	wndclass.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(MYICON));
 	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wndclass.lpszClassName = szAppName;
