@@ -6,6 +6,33 @@
 
 #define JSON_FILE "devices.json"
 
+//Example 
+/********************************************************************
+    readDevices();    // This is for read whole file
+
+**************************************************************** 
+    This is for How to add Device  
+
+    addDevice("USB Device", "Pendrive", "32GB");
+    addDevice("Monitor", "LG", "1080p, 60Hz");
+    addDevice("Monitor", "Samsung", "4K, 144Hz");
+    addDevice("Bluetooth Device", "Mouse", "Wireless");
+    addDevice("Audio Device", "Headphone", "Stereo, Noise Cancelling");
+    
+   
+/****************************************************************
+    char category[50], name[50], config[100];
+    char* deviceInfo = getDeviceByID(DEVICE_LG_MONITOR);  // Here we are using ENUM Value
+    parseDeviceString(deviceInfo, category, (unsigned int)sizeof(category),
+                     name, (unsigned int)sizeof(name),
+                     config, (unsigned int)sizeof(config));
+*****************************************************************
+    printf("Category: %s\n", category);
+    printf("Name: %s\n", name);
+    printf("Configuration: %s\n", config);
+*****************************************************************/
+
+
 void readDevices() 
 {
     FILE* file;
@@ -191,37 +218,6 @@ void parseDeviceString(const char* input, char* category, size_t cat_size, char*
     }
 }
 
-/*int main() {
-    readDevices();
-    addDevice("USB Device", "Pendrive", "32GB");
-    addDevice("USB Device", "Charging Device", "Fast Charger");
-    addDevice("Monitor", "LG", "1080p, 60Hz");
-    addDevice("Monitor", "Samsung", "4K, 144Hz");
-    addDevice("Bluetooth Device", "Mouse", "Wireless");
-    addDevice("Audio Device", "Headphone", "Stereo, Noise Cancelling");
-    
-   
-    readDevices();
-
-    int deviceID;
-
-    printf("Enter Device ID to retrieve: ");
-    scanf_s("%d", &deviceID);
-
-    char* deviceInfo = getDeviceByID(deviceID);
-   // printf("%s\n", deviceInfo);
-
-    char category[50], name[50], config[100];
-
-    parseDeviceString(deviceInfo, category, (unsigned int)sizeof(category),
-        name, (unsigned int)sizeof(name),
-        config, (unsigned int)sizeof(config));
-
-    printf("Category: %s\n", category);
-    printf("Name: %s\n", name);
-    printf("Configuration: %s\n", config);
+ 
 
 
-    free(deviceInfo);
-    return 0;
-}*/

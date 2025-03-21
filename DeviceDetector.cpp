@@ -11,6 +11,7 @@
 #include <tchar.h>
 
 #include "DeviceDetector.h"
+#include "DeviceDetector_JSON.h"
 
 #define	MAX_HEIGHT	600
 #define	MAX_WIDTH	800
