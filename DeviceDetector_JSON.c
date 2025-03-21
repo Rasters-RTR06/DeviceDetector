@@ -199,6 +199,7 @@ int main() {
     addDevice("Bluetooth Device", "Mouse", "Wireless");
     addDevice("Audio Device", "Headphone", "Stereo, Noise Cancelling");
     */
+   /*
     readDevices();
 
     int deviceID;
@@ -222,4 +223,4 @@ int main() {
 
     free(deviceInfo);
     return 0;
-}
+}*/
