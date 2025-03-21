@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "DeviceDetector_JSON.h"
+#include "Headers/DeviceDetector_JSON.h"
 #include "cjson/cJSON.h"
 
 #define JSON_FILE "devices.json"
