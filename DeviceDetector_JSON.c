@@ -190,16 +190,16 @@ void parseDeviceString(const char* input, char* category, size_t cat_size, char*
     }
 }
 
-int main() {
-  /*  readDevices();
+/*int main() {
+    readDevices();
     addDevice("USB Device", "Pendrive", "32GB");
     addDevice("USB Device", "Charging Device", "Fast Charger");
     addDevice("Monitor", "LG", "1080p, 60Hz");
     addDevice("Monitor", "Samsung", "4K, 144Hz");
     addDevice("Bluetooth Device", "Mouse", "Wireless");
     addDevice("Audio Device", "Headphone", "Stereo, Noise Cancelling");
-    */
-   /*
+    
+   
     readDevices();
 
     int deviceID;
