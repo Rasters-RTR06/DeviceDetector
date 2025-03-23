@@ -3,7 +3,7 @@
 // Used by DeviceDetector.rc
 
 #define MYICON					101
-
+#define BITMAP_ID               102
 
 //ID for Menu
 #define IDM_FILE_DEVICE_LIST			1101

@@ -16,6 +16,7 @@
 
 #define	MAX_HEIGHT	600
 #define	MAX_WIDTH	800
+#define SPLASH_DURATION 3000
 
 // global function declarations
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -24,6 +25,8 @@ INT_PTR CALLBACK    AboutWndProc(HWND, UINT, WPARAM, LPARAM);
 // global variable declarations
 HWND ghwnd = NULL;
 HMENU ghMenu = NULL;
+HBITMAP hSplashBMP;
+HINSTANCE ghInstance;
 
 // variable related to File I/O
 char gszLogFileName[] = "Log.txt";
@@ -89,6 +92,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 		NULL);
 
 	ghwnd = hwnd;
+	ghInstance = wndclass.hInstance;
+
+	// Load Bitmap
+	hSplashBMP = LoadBitmap(ghInstance, MAKEINTRESOURCE(BITMAP_ID));
+	// Set timer for splash screen duration
+    SetTimer(hwnd, 1, SPLASH_DURATION, NULL);
 
 	// show window
 	ShowWindow(hwnd, iCmdShow);
@@ -193,7 +202,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            // Welcome Screen code will come here
+			// Welcome Screen code will come here
+            HDC hdcMem = CreateCompatibleDC(hdc);
+			SelectObject(hdcMem, hSplashBMP);
+            BITMAP bm;
+            GetObject(hSplashBMP, sizeof(bm), &bm);
+            BitBlt(hdc, 0, 0, bm.bmWidth, bm.bmHeight, hdcMem, 0, 0, SRCCOPY);
+            DeleteDC(hdcMem);
             EndPaint(hWnd, &ps);
         }
         break;
@@ -290,5 +305,3 @@ void ShowHidePage(HWND hWnd)
 	//ShowWindow(GetDlgItem(hWnd, IDD_BUTTON), bBlackListPage);
 
 }
-
-
