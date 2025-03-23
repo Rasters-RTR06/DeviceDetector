@@ -22,4 +22,8 @@
 #define IDD_ABOUTBOX			3000
 #define	IDC_STAT_ICON			3001
 
+//Show device List
+#define IDD_CATEGORY			4000
+
+
 

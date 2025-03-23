@@ -29,6 +29,9 @@ HMENU ghMenu = NULL;
 char gszLogFileName[] = "Log.txt";
 FILE* gpFile = NULL;
 
+//Local functions declarations
+void showFileDeviceList(HWND);
+
 // Entry point funtion
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
 {
@@ -159,6 +162,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				//Menu Commands
 			case IDM_FILE_DEVICE_LIST:
 			{
+				showFileDeviceList(hWnd);
 				break;
 			}
 			case IDM_FILE_BLACK_LIST:
@@ -270,6 +274,16 @@ void CreateDialogControls(HWND hWnd)
 		NULL, 
 		NULL);
 	
+	::CreateWindow(
+		TEXT("Static"), //Button type (Mostly Needed 1. Button 2. Static, 3. Edit)
+		TEXT("Category"), //Name on control
+		WS_CHILD | WS_VISIBLE, //Style reqiured (Explore as required)
+		200, 200, //left top position WITHIN WINDOW
+		50, 50, //Size (width n height)
+		hWnd, // handle of app window
+		(HMENU)IDD_CATEGORY, // ID of button to uniquely identify in othere area of program 
+		NULL,
+		NULL);
 }
 
 void ShowHidePage(HWND hWnd)
@@ -284,11 +298,34 @@ void ShowHidePage(HWND hWnd)
 	//ShowWindow(GetDlgItem(hWnd, IDD_BUTTON), bForgotPwdPage);
 
 	//Device List Page
-	//ShowWindow(GetDlgItem(hWnd, IDD_BUTTON), bDeviceListPage);
+	ShowWindow(GetDlgItem(hWnd, IDD_BUTTON), bDeviceListPage);
 
 	//Black List Page
 	//ShowWindow(GetDlgItem(hWnd, IDD_BUTTON), bBlackListPage);
 
 }
 
+void showFileDeviceList(HWND hwnd)
+{
+	HDC hdc;
+	RECT rc;
+	char category[50], name[50], config[100];
+
+	TCHAR str[] = TEXT("PENDRIVE");
+	GetClientRect(hwnd, &rc);
+	hdc = GetDC(hwnd);
+	
+	for (int i = 0; i <= 5; i++)
+	{
+		char * deviceInfo = getDeviceByID(DEVICE_LG_MONITOR);
+	
+		parseDeviceString(deviceInfo, category, (unsigned int)sizeof(category) , name, (unsigned int)sizeof(name), config, (unsigned int)sizeof(config));
+		
+		printf("Category: %s\n", category);
+		printf("Name:%s\n", name);
+
+		//DrawText(hdc, deviceDetails, -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+		DrawText(hdc, str, -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+	}
+}
 
