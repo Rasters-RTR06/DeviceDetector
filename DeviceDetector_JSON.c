@@ -208,11 +208,11 @@ void parseDeviceString(const char* input, char* category, size_t cat_size, char*
     while (line != NULL) 
     {
         if (strstr(line, "- Category:") != NULL)
-            sscanf_s(line, "- Category: %49s", category, cat_size);
+            sscanf_s(line, "- Category: %49s", category, (unsigned int)cat_size);
         else if (strstr(line, "- Name:") != NULL)
-            sscanf_s(line, "- Name: %49s", name, name_size);
+            sscanf_s(line, "- Name: %49s", name, (unsigned int)name_size);
         else if (strstr(line, "- Configuration:") != NULL)
-            sscanf_s(line, "- Configuration: %99[^\n]", config, config_size);  
+            sscanf_s(line, "- Configuration: %99[^\n]", config, (unsigned int)config_size);  
 
         line = strtok_s(NULL, "\n", &context);
     }

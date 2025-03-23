@@ -9,8 +9,8 @@
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
-
-#include "Headers/DeviceDetector.h"
+#include "cjson/cJSON.h"
+#include "DeviceDetector.h"
 #include "Headers/DeviceDetector_JSON.h"
 
 
@@ -317,7 +317,7 @@ void showFileDeviceList(HWND hwnd)
 	
 	for (int i = 0; i <= 5; i++)
 	{
-		char * deviceInfo = getDeviceByID(DEVICE_LG_MONITOR);
+		char * deviceInfo = getDeviceByID(i);
 	
 		parseDeviceString(deviceInfo, category, (unsigned int)sizeof(category) , name, (unsigned int)sizeof(name), config, (unsigned int)sizeof(config));
 		
@@ -325,7 +325,9 @@ void showFileDeviceList(HWND hwnd)
 		printf("Name:%s\n", name);
 
 		//DrawText(hdc, deviceDetails, -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
-		DrawText(hdc, str, -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+		DrawText(hdc, category, -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
 	}
 }
+
+
 
