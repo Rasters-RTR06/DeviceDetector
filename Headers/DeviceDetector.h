@@ -30,4 +30,11 @@ void FetchUSBDeviceDetails(void);
 BOOL CheckForRegisteredUser();
 int ValidateEmail(char*);
 
+// In DeviceDetector.h
+typedef struct {
+    char friendlyName[MAX_PATH];
+    char manufacturer[MAX_PATH];
+    char deviceDescription[MAX_PATH];
+    char classGuid[MAX_PATH];
+} DeviceInfo;
 

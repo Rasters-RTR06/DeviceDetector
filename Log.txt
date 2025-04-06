@@ -1,0 +1,18 @@
+Program started successfully
+USB device Detected successfully...!
+In for loop: index = 1
+Device Instance id : USBSTOR\DISK&VEN_SANDISK&PROD_CRUZER_BLADE&REV_1.00\03035132092922191401&0
+Device friendly name : SanDisk Cruzer Blade USB Device
+Device Manufacturer: (Standard disk drives)
+Device Description: Disk drive
+Device Setup Class GUID: {4d36e967-e325-11ce-bfc1-08002be10318}
+Parent Value (Unique ID): USBSTOR\DISK&VEN_SANDISK&PROD_CRUZER_BLADE&REV_1.00\03035132092922191401&0
+  Friendly Name: SanDisk Cruzer Blade USB Device
+  Manufacturer: (Standard disk drives)
+  Description: Disk drive
+  Class GUID: {4d36e967-e325-11ce-bfc1-08002be10318}
+Total bytes : 30784094208
+Disk ID : 1142834211
+Device Number : 1
+Device Path : \\?\usbstor#disk&ven_sandisk&prod_cruzer_blade&rev_1.00#03035132092922191401&0#{53f56307-b6bf-11d0-94f2-00a0c91efb8b}
+Program terminated successfully

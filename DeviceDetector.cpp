@@ -783,6 +783,7 @@ void FetchUSBDeviceDetails(void)
 	DWORD member_index = 0;
 	SP_DEVINFO_DATA dev_info_data;
 	SP_DEVICE_INTERFACE_DATA dev_interface_data;
+	DeviceInfo deviceInfo;
 	static TCHAR str_buff[2048];
 	struct usbstor_node* cur_node = NULL;
 
@@ -848,6 +849,128 @@ void FetchUSBDeviceDetails(void)
 				fprintf(gpFile, "Device friendly name : Friendly Name Too Long\n");
 			}
 		}
+
+		// Try to get the device manufacturer
+		if (SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_MFG, NULL,
+			(BYTE*)str_buff, sizeof(str_buff), NULL))
+		{
+			fprintf(gpFile, "Device Manufacturer: %s\n", str_buff);
+		}
+		else
+		{
+			DWORD errorCode = GetLastError();
+			if (errorCode == ERROR_INSUFFICIENT_BUFFER)
+			{
+				fprintf(gpFile, "Device Manufacturer: Manufacturer Name Too Long\n");
+			}
+			else if (errorCode == ERROR_INVALID_DATA)
+			{
+				fprintf(gpFile, "Device Manufacturer: No Manufacturer Property Found\n");
+			}
+			else
+			{
+				fprintf(gpFile, "Device Manufacturer: Failed with Error Code %lu\n", errorCode);
+			}
+		}
+
+		// Try to get the device description
+		if (SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_DEVICEDESC, NULL,
+			(BYTE*)str_buff, sizeof(str_buff), NULL))
+		{
+			fprintf(gpFile, "Device Description: %s\n", str_buff);
+		}
+		else
+		{
+			DWORD errorCode = GetLastError();
+			if (errorCode == ERROR_INSUFFICIENT_BUFFER)
+			{
+				fprintf(gpFile, "Device Description: Description Too Long\n");
+			}
+			else if (errorCode == ERROR_INVALID_DATA)
+			{
+				fprintf(gpFile, "Device Description: No Description Property Found\n");
+			}
+			else
+			{
+				fprintf(gpFile, "Device Description: Failed with Error Code %lu\n", errorCode);
+			}
+		}
+
+		// Try to get the GUID that represents the device setup class
+		if (SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_CLASSGUID, NULL,
+			(BYTE*)str_buff, sizeof(str_buff), NULL))
+		{
+			fprintf(gpFile, "Device Setup Class GUID: %s\n", str_buff);
+		}
+		else
+		{
+			DWORD errorCode = GetLastError();
+			if (errorCode == ERROR_INSUFFICIENT_BUFFER)
+			{
+				fprintf(gpFile, "Device Setup Class GUID: GUID Too Long\n");
+			}
+			else if (errorCode == ERROR_INVALID_DATA)
+			{
+				fprintf(gpFile, "Device Setup Class GUID: No GUID Property Found\n");
+			}
+			else
+			{
+				fprintf(gpFile, "Device Setup Class GUID: Failed with Error Code %lu\n", errorCode);
+			}
+		}
+
+				// Buffer to hold the unique ID
+				CHAR deviceInstanceID[MAX_DEVICE_ID_LEN];
+
+				// Retrieve the Device Instance ID (Parent Value)
+				if (SetupDiGetDeviceInstanceId(dev_handle, &dev_info_data, deviceInstanceID,
+											sizeof(deviceInstanceID), NULL))
+				{
+					fprintf(gpFile, "Parent Value (Unique ID): %s\n", deviceInstanceID);
+				}
+				else
+				{
+					DWORD errorCode = GetLastError();
+					if (errorCode == ERROR_INSUFFICIENT_BUFFER)
+					{
+						fprintf(gpFile, "Parent Value: ID Too Long\n");
+					}
+					else
+					{
+						fprintf(gpFile, "Failed to retrieve Parent Value. Error Code: %lu\n", errorCode);
+					}
+				}
+
+		// Fetch friendly name
+		if (!SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_FRIENDLYNAME, NULL,
+			(BYTE*)deviceInfo.friendlyName, sizeof(deviceInfo.friendlyName), NULL)) {
+			_tcscpy_s(deviceInfo.friendlyName, TEXT("Unavailable"));
+		}
+
+		// Fetch manufacturer
+		if (!SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_MFG, NULL,
+			(BYTE*)deviceInfo.manufacturer, sizeof(deviceInfo.manufacturer), NULL)) {
+			_tcscpy_s(deviceInfo.manufacturer, TEXT("Unavailable"));
+		}
+
+		// Fetch device description
+		if (!SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_DEVICEDESC, NULL,
+			(BYTE*)deviceInfo.deviceDescription, sizeof(deviceInfo.deviceDescription), NULL)) {
+			_tcscpy_s(deviceInfo.deviceDescription, TEXT("Unavailable"));
+		}
+
+		// Fetch class GUID
+		if (!SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_CLASSGUID, NULL,
+			(BYTE*)deviceInfo.classGuid, sizeof(deviceInfo.classGuid), NULL)) {
+			_tcscpy_s(deviceInfo.classGuid, TEXT("Unavailable"));
+		}		
+
+		// Log device info
+        fprintf(gpFile, "  Friendly Name: %s\n", deviceInfo.friendlyName);
+        fprintf(gpFile, "  Manufacturer: %s\n", deviceInfo.manufacturer);
+        fprintf(gpFile, "  Description: %s\n", deviceInfo.deviceDescription);
+        fprintf(gpFile, "  Class GUID: %s\n", deviceInfo.classGuid);
+
 
 		// Try to get the device interface data
 		if (!SetupDiEnumDeviceInterfaces(dev_handle, NULL, &GUID_DEVINTERFACE_DISK, member_index, &dev_interface_data))
