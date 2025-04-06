@@ -24,6 +24,8 @@
 
 //Show device List
 #define IDD_CATEGORY			4000
-
+#define IDD_NEXT_BUTTON_SDL		4001
+#define IDD_PREV_BUTTON_SDL		4002
+#define IDD_TEXT				4003
 
 

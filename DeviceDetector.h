@@ -9,6 +9,7 @@ BOOL bDeviceListPage = FALSE;
 BOOL bBlackListPage = FALSE;
 
 
+
 void AddMenu(HWND);
 
 void CreateDialogControls(HWND);
