@@ -919,27 +919,27 @@ void FetchUSBDeviceDetails(void)
 			}
 		}
 
-				// Buffer to hold the unique ID
-				CHAR deviceInstanceID[MAX_DEVICE_ID_LEN];
+		// Buffer to hold the unique ID
+		CHAR deviceInstanceID[MAX_DEVICE_ID_LEN];
 
-				// Retrieve the Device Instance ID (Parent Value)
-				if (SetupDiGetDeviceInstanceId(dev_handle, &dev_info_data, deviceInstanceID,
-											sizeof(deviceInstanceID), NULL))
-				{
-					fprintf(gpFile, "Parent Value (Unique ID): %s\n", deviceInstanceID);
-				}
-				else
-				{
-					DWORD errorCode = GetLastError();
-					if (errorCode == ERROR_INSUFFICIENT_BUFFER)
-					{
-						fprintf(gpFile, "Parent Value: ID Too Long\n");
-					}
-					else
-					{
-						fprintf(gpFile, "Failed to retrieve Parent Value. Error Code: %lu\n", errorCode);
-					}
-				}
+		// Retrieve the Device Instance ID (Parent Value)
+		if (SetupDiGetDeviceInstanceId(dev_handle, &dev_info_data, deviceInstanceID,
+									sizeof(deviceInstanceID), NULL))
+		{
+			fprintf(gpFile, "Parent Value (Unique ID): %s\n", deviceInstanceID);
+		}
+		else
+		{
+			DWORD errorCode = GetLastError();
+			if (errorCode == ERROR_INSUFFICIENT_BUFFER)
+			{
+				fprintf(gpFile, "Parent Value: ID Too Long\n");
+			}
+			else
+			{
+				fprintf(gpFile, "Failed to retrieve Parent Value. Error Code: %lu\n", errorCode);
+			}
+		}
 
 		// Fetch friendly name
 		if (!SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_FRIENDLYNAME, NULL,
