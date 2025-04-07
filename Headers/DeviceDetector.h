@@ -11,6 +11,12 @@ BOOL bBlackListPage = FALSE;
 BOOL bUserRegistrationDone = FALSE;
 BOOL bUserLoginDone = FALSE;
 
+HINSTANCE ghInstance;
+HWND ghwndSplash = NULL;
+HDC hSplashDC = NULL;
+HDC hMemDC = NULL;
+LONG SplashWidth, SplashHeight;
+
 void ProcessCommand(HWND, WPARAM, LPARAM);
 
 void AddMenu(HWND);
@@ -29,5 +35,7 @@ void FetchUSBDeviceDetails(void);
 
 BOOL CheckForRegisteredUser();
 int ValidateEmail(char*);
+
+void Start_Splash();
 
 

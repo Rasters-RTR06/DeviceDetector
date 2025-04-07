@@ -30,7 +30,9 @@
 
 // global function declarations
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK    SplashScreenWndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    AboutWndProc(HWND, UINT, WPARAM, LPARAM);
+
 
 // global variable declarations
 HWND ghwnd = NULL;
@@ -52,6 +54,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	MSG msg;
 	TCHAR szAppName[] = TEXT("RTR6");
 
+	int screenWidth, screenHeight;
+	int windowWidthHalf, windowHeightHalf;
+	int windowTop, windowLeft;
+
 	// code
 	// create log file
 	gpFile = fopen(gszLogFileName, "w");
@@ -65,6 +71,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	{
 		fprintf(gpFile, "Program started successfully\n");
 	}
+
+	ghInstance = hInstance;
+	Start_Splash();
 
 	// window class Initialization
 	wndclass.cbSize = sizeof(WNDCLASSEX);
@@ -83,6 +92,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	// registration of window class
 	RegisterClassEx(&wndclass);
 
+	screenWidth = GetSystemMetrics(SM_CXFULLSCREEN);
+	screenHeight = GetSystemMetrics(SM_CYFULLSCREEN);
+	fprintf(gpFile, "screen width = %d\n", screenWidth);
+	fprintf(gpFile, "screen height = %d\n", screenHeight);
+
+	windowWidthHalf = MAX_WIDTH / 2;
+	windowHeightHalf = MAX_HEIGHT / 2;
+
+	windowLeft = (screenWidth / 2) - windowWidthHalf;
+	windowTop = (screenHeight / 2) - windowHeightHalf;
+
+	fprintf(gpFile, "Window Top = %d\n", windowTop);
+	fprintf(gpFile, "window Left= %d\n", windowLeft);
+
 	// create window
 	hwnd = CreateWindowEx(WS_EX_APPWINDOW,
 		szAppName,
@@ -93,22 +116,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 		WS_THICKFRAME | \
 		WS_MINIMIZEBOX | \
 		WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_VISIBLE,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
+		windowLeft,
+		windowTop,
+		MAX_WIDTH,
+		MAX_HEIGHT,
 		NULL,
 		NULL,
 		hInstance,
 		NULL);
 
 	ghwnd = hwnd;
-	ghInstance = wndclass.hInstance;
-
-	// Load Bitmap
-	hSplashBMP = LoadBitmap(ghInstance, MAKEINTRESOURCE(BITMAP_ID));
-	// Set timer for splash screen duration
-    SetTimer(hwnd, 1, SPLASH_DURATION, NULL);
 
 	RegisterUSBNotification();
 
@@ -231,16 +248,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	}
     case WM_PAINT:
     {
-        PAINTSTRUCT ps;
-        HDC hdc = BeginPaint(hWnd, &ps);
-		// Welcome Screen code will come here
-        HDC hdcMem = CreateCompatibleDC(hdc);
-		SelectObject(hdcMem, hSplashBMP);
-        BITMAP bm;
-        GetObject(hSplashBMP, sizeof(bm), &bm);
-        BitBlt(hdc, 0, 0, bm.bmWidth, bm.bmHeight, hdcMem, 0, 0, SRCCOPY);
-        DeleteDC(hdcMem);
-        EndPaint(hWnd, &ps);
 		break;
     }
     case WM_DESTROY:
@@ -304,42 +311,42 @@ void CreateDialogControls(HWND hWnd)
 
 void CreateRegistrationDialogControls(HWND hWnd)
 {
-	::CreateWindow(TEXT("Static"), TEXT("User Registration"), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE,
+	CreateWindow(TEXT("Static"), TEXT("User Registration"), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE,
 		200, 60, 400, 40, hWnd,
 		(HMENU)IDL_USER_REGISTRATION, NULL, NULL);
-	::CreateWindow(TEXT("Static"), TEXT("First Name"), WS_CHILD | WS_VISIBLE,
+	CreateWindow(TEXT("Static"), TEXT("First Name"), WS_CHILD | WS_VISIBLE,
 		250, 155, 100, 25, hWnd,
 		(HMENU)IDL_FIRST_NAME, NULL, NULL);
-	::CreateWindow(TEXT("Static"), TEXT("Last Name"), WS_CHILD | WS_VISIBLE,
+	CreateWindow(TEXT("Static"), TEXT("Last Name"), WS_CHILD | WS_VISIBLE,
 		250, 205, 100, 25, hWnd,
 		(HMENU)IDL_LAST_NAME, NULL, NULL);
-	::CreateWindow(TEXT("Static"), TEXT("Email Id"), WS_CHILD | WS_VISIBLE,
+	CreateWindow(TEXT("Static"), TEXT("Email Id"), WS_CHILD | WS_VISIBLE,
 		250, 255, 100, 25, hWnd,
 		(HMENU)IDL_EMAIL_ID, NULL, NULL);
-	::CreateWindow(TEXT("Static"), TEXT("Username"), WS_CHILD | WS_VISIBLE,
+	CreateWindow(TEXT("Static"), TEXT("Username"), WS_CHILD | WS_VISIBLE,
 		250, 305, 100, 25, hWnd,
 		(HMENU)IDL_USERNAME, NULL, NULL);
-	::CreateWindow(TEXT("Static"), TEXT("Password"), WS_CHILD | WS_VISIBLE,
+	CreateWindow(TEXT("Static"), TEXT("Password"), WS_CHILD | WS_VISIBLE,
 		250, 355, 100, 25, hWnd,
 		(HMENU)IDL_PASSWORD, NULL, NULL);
 
-	::CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
 		400, 150, 200, 25, hWnd,
 		(HMENU)IDTB_FIRST_NAME, NULL, NULL);
-	::CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
 		400, 200, 200, 25, hWnd,
 		(HMENU)IDTB_LAST_NAME, NULL, NULL);
-	::CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
 		400, 250, 200, 25, hWnd,
 		(HMENU)IDTB_EMAIL_ID, NULL, NULL);
-	::CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
 		400, 300, 200, 25, hWnd,
 		(HMENU)IDTB_USERNAME, NULL, NULL);
-	::CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
 		400, 350, 200, 25, hWnd,
 		(HMENU)IDTB_PASSWORD, NULL, NULL);
 
-	::CreateWindow(
+	CreateWindow(
 		TEXT("BUTTON"), TEXT("Create"), WS_CHILD | WS_VISIBLE,
 		325, 420, 150, 40, hWnd,
 		(HMENU)IDBTN_CREATE_USER, NULL, NULL);
@@ -348,48 +355,48 @@ void CreateRegistrationDialogControls(HWND hWnd)
 
 void CreateLoginDialogControls(HWND hWnd)
 {
-	::CreateWindow(TEXT("Static"), TEXT("Login"), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE,
+	CreateWindow(TEXT("Static"), TEXT("Login"), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE,
 		200, 100, 400, 40, hWnd,
 		(HMENU)IDL_USER_LOGIN, NULL, NULL);
-	::CreateWindow(TEXT("Static"), TEXT("Username"), WS_CHILD | WS_VISIBLE,
+	CreateWindow(TEXT("Static"), TEXT("Username"), WS_CHILD | WS_VISIBLE,
 		250, 205, 100, 25, hWnd,
 		(HMENU)IDL_USERNAME_LOGIN, NULL, NULL);
-	::CreateWindow(TEXT("Static"), TEXT("Password"), WS_CHILD | WS_VISIBLE,
+	CreateWindow(TEXT("Static"), TEXT("Password"), WS_CHILD | WS_VISIBLE,
 		250, 255, 100, 25, hWnd,
 		(HMENU)IDL_PASSWORD_LOGIN, NULL, NULL);
 
-	::CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
 		400, 200, 200, 25, hWnd,
 		(HMENU)IDTB_USERNAME_LOGIN, NULL, NULL);
-	::CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
 		400, 250, 200, 25, hWnd, 
 		(HMENU)IDTB_PASSWORD_LOGIN, NULL, NULL);
 
-	::CreateWindow(TEXT("BUTTON"), TEXT("Log In"), WS_CHILD | WS_VISIBLE,
+	CreateWindow(TEXT("BUTTON"), TEXT("Log In"), WS_CHILD | WS_VISIBLE,
 		250, 320, 150, 40, hWnd,
 		(HMENU)IDBTN_LOGIN_USER, NULL, NULL);
-	::CreateWindow(TEXT("BUTTON"), TEXT("Forgot Password"), WS_CHILD | WS_VISIBLE, 
+	CreateWindow(TEXT("BUTTON"), TEXT("Forgot Password"), WS_CHILD | WS_VISIBLE, 
 		410, 320, 150, 40, hWnd,
 		(HMENU)IDBTN_FORGOT_PASSWORD, NULL, NULL);
 }
 
 void CreateForgotPwdControls(HWND hWnd)
 {
-	::CreateWindow(TEXT("Static"), TEXT("Forgot Password"), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE,
+	CreateWindow(TEXT("Static"), TEXT("Forgot Password"), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE,
 		200, 100, 400, 40, hWnd,
 		(HMENU)IDL_FORGOT_PASSWORD, NULL, NULL);
-	::CreateWindow(TEXT("Static"), TEXT("Email ID"), WS_CHILD | WS_VISIBLE,
+	CreateWindow(TEXT("Static"), TEXT("Email ID"), WS_CHILD | WS_VISIBLE,
 		250, 205, 100, 25, hWnd,
 		(HMENU)IDL_EMAILID_FGTPWD, NULL, NULL);
 
-	::CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER,
 		400, 200, 200, 25, hWnd,
 		(HMENU)IDTB_EMAILID_FGTPWD, NULL, NULL);
 
-	::CreateWindow(TEXT("BUTTON"), TEXT("Send"), WS_CHILD | WS_VISIBLE,
+	CreateWindow(TEXT("BUTTON"), TEXT("Send"), WS_CHILD | WS_VISIBLE,
 		250, 320, 150, 40, hWnd,
 		(HMENU)IDBTN_SEND_FGTPWD, NULL, NULL);
-	::CreateWindow(TEXT("BUTTON"), TEXT("Cancel"), WS_CHILD | WS_VISIBLE,
+	CreateWindow(TEXT("BUTTON"), TEXT("Cancel"), WS_CHILD | WS_VISIBLE,
 		410, 320, 150, 40, hWnd,
 		(HMENU)IDBTN_CANCEL_FGTPWD, NULL, NULL);
 }
@@ -937,6 +944,134 @@ void FetchUSBDeviceDetails(void)
 #pragma endregion
 
 
+
+
+#pragma region SplashScreen
+
+
+
+void Start_Splash()
+{
+	WNDCLASSEX wndSplash;
+	HWND hwndSplash;
+	MSG msg;
+	TCHAR szSplash[] = TEXT("SplashScreen");
+
+	int screenWidth, screenHeight;
+	int windowWidthHalf, windowHeightHalf;
+	int windowTop, windowLeft;
+
+	// window class Initialization
+	wndSplash.cbSize = sizeof(WNDCLASSEX);
+	wndSplash.lpszClassName = szSplash;
+	wndSplash.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndSplash.lpfnWndProc = SplashScreenWndProc;
+	wndSplash.hInstance = ghInstance;
+	wndSplash.style = 0;
+	wndSplash.cbClsExtra = 0;
+	wndSplash.cbWndExtra = 0;
+	wndSplash.hbrBackground = NULL;
+	wndSplash.hIcon = NULL;
+	wndSplash.lpszMenuName = NULL;
+	wndSplash.hIconSm = NULL;
+
+	// registration of window class
+	RegisterClassEx(&wndSplash);
+
+	hSplashBMP = LoadBitmap(ghInstance, MAKEINTRESOURCE(BITMAP_ID));
+
+	if (!hSplashBMP)
+	{
+
+		MessageBox(NULL, "Failed To Load Bitmap", "Error", MB_OK | MB_ICONERROR);
+
+		return;
+
+	}
+
+	BITMAP Bitmap;
+	GetObject(hSplashBMP, sizeof(BITMAP), &Bitmap);
+
+	SplashWidth = Bitmap.bmWidth;
+	SplashHeight = Bitmap.bmHeight;
+
+	screenWidth = GetSystemMetrics(SM_CXFULLSCREEN);
+	screenHeight = GetSystemMetrics(SM_CYFULLSCREEN);
+
+	windowWidthHalf = SplashWidth / 2;
+	windowHeightHalf = SplashHeight / 2;
+
+	windowLeft = (screenWidth / 2) - windowWidthHalf;
+	windowTop = (screenHeight / 2) - windowHeightHalf;
+
+
+	// create window
+	hwndSplash = CreateWindowEx(0,
+		szSplash,
+		TEXT("Splash"),
+		WS_POPUP,
+		windowLeft,
+		windowTop,
+		SplashWidth,
+		SplashHeight,
+		NULL,
+		NULL,
+		ghInstance,
+		NULL);
+
+	ghwndSplash = hwndSplash;
+
+	hSplashDC = GetDC(hwndSplash);
+	hMemDC = CreateCompatibleDC(hSplashDC);
+	SelectObject(hMemDC, (HGDIOBJ)hSplashBMP);
+
+	//SetTimer(hwndSplash, 1, SPLASH_DURATION, NULL);
+	// show window
+	ShowWindow(hwndSplash, SW_SHOW);
+
+	// paint background of the window
+	UpdateWindow(hwndSplash);
+
+	// Message Loop
+	while (GetMessage(&msg, NULL, 0, 0))
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+}
+
+LRESULT CALLBACK SplashScreenWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_ERASEBKGND:
+	{
+		BitBlt((HDC)wParam, 0, 0, SplashWidth, SplashHeight, hMemDC, 0, 0, SRCCOPY);
+		break;
+	}
+	case WM_CHAR:
+	case WM_KILLFOCUS:
+	case WM_LBUTTONDOWN:
+	case WM_RBUTTONDOWN:
+	case WM_MBUTTONDOWN:
+	{
+		DeleteObject(hSplashBMP);
+		ReleaseDC(hWnd, hSplashDC);
+		ReleaseDC(hWnd, hMemDC);
+		DestroyWindow(hWnd);
+		break;
+	}
+	case WM_DESTROY:
+	{
+		PostQuitMessage(0);
+		break;
+	}
+	default:
+		break;
+	}
+	return DefWindowProc(hWnd, message, wParam, lParam);
+}
+#pragma endregion
 
 
 
