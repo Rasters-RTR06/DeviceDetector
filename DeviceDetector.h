@@ -11,11 +11,18 @@ BOOL bBlackListPage = FALSE;
 BOOL bUserRegistrationDone = FALSE;
 BOOL bUserLoginDone = FALSE;
 
-HINSTANCE ghInstance;
 HWND ghwndSplash = NULL;
 HDC hSplashDC = NULL;
 HDC hMemDC = NULL;
 LONG SplashWidth, SplashHeight;
+
+// In DeviceDetector.h
+typedef struct {
+    char friendlyName[MAX_PATH];
+    char manufacturer[MAX_PATH];
+    char deviceDescription[MAX_PATH];
+    char classGuid[MAX_PATH];
+} DeviceInfo;
 
 void ProcessCommand(HWND, WPARAM, LPARAM);
 
