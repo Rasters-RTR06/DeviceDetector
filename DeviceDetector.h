@@ -1,48 +1,31 @@
 #pragma once
 
+#include <Windows.h>
+#include "stdio.h"
+#include <stdlib.h>
+#include <malloc.h>
 #include "resource.h"
 
-BOOL bRegistrationPage = FALSE;
-BOOL bLoginPage = FALSE;
-BOOL bForgotPwdPage = FALSE;
-BOOL bDeviceListPage = FALSE;
-BOOL bBlackListPage = FALSE;
 
-BOOL bUserRegistrationDone = FALSE;
-BOOL bUserLoginDone = FALSE;
+#define MAX_DEVICE_INFO_LEN     2048
+#define MAX_STR_LEN             1024
 
-HWND ghwndSplash = NULL;
-HDC hSplashDC = NULL;
-HDC hMemDC = NULL;
-LONG SplashWidth, SplashHeight;
 
 // In DeviceDetector.h
 typedef struct {
-    char friendlyName[MAX_PATH];
-    char manufacturer[MAX_PATH];
-    char deviceDescription[MAX_PATH];
-    char classGuid[MAX_PATH];
+    char friendlyName[MAX_DEVICE_INFO_LEN];
+    char manufacturer[MAX_DEVICE_INFO_LEN];
+    char deviceDescription[MAX_DEVICE_INFO_LEN];
+    char classGuid[MAX_DEVICE_INFO_LEN];
 } DeviceInfo;
 
-void ProcessCommand(HWND, WPARAM, LPARAM);
+typedef struct {
+    char firstName[MAX_STR_LEN];
+    char lastName[MAX_STR_LEN];
+    char emailID[MAX_STR_LEN];
+    char userName[MAX_STR_LEN];
+    char password[MAX_STR_LEN];
+} AdminInfo, *PAdminInfo;
 
-void AddMenu(HWND);
-void CreateDialogControls(HWND);
-void CreateRegistrationDialogControls(HWND);
-void CreateLoginDialogControls(HWND);
-void CreateForgotPwdControls(HWND);
-
-void ShowHidePage(HWND);
-void ShowHideRegistrationPage(HWND);
-void ShowHideLoginPage(HWND);
-void ShowHideForgotPwdPage(HWND);
-
-void RegisterUSBNotification(void);
-void FetchUSBDeviceDetails(void);
-
-BOOL CheckForRegisteredUser();
-int ValidateEmail(char*);
-
-void Start_Splash();
 
 

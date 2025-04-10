@@ -4,7 +4,7 @@
 #include <windows.h>
 
 
-#include "stdio.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
 #include <memory.h>
@@ -32,6 +32,44 @@
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK    SplashScreenWndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    AboutWndProc(HWND, UINT, WPARAM, LPARAM);
+
+AdminInfo* gaInfo;
+
+void ProcessCommand(HWND, WPARAM, LPARAM);
+
+void AddMenu(HWND);
+void CreateDialogControls(HWND);
+void CreateRegistrationDialogControls(HWND);
+void CreateLoginDialogControls(HWND);
+void CreateForgotPwdControls(HWND);
+
+void ShowHidePage(HWND);
+void ShowHideRegistrationPage(HWND);
+void ShowHideLoginPage(HWND);
+void ShowHideForgotPwdPage(HWND);
+
+void RegisterUSBNotification(void);
+void FetchUSBDeviceDetails(void);
+
+BOOL CheckForRegisteredUser();
+int ValidateEmail(char*);
+
+void Start_Splash();
+
+BOOL bRegistrationPage = FALSE;
+BOOL bLoginPage = FALSE;
+BOOL bForgotPwdPage = FALSE;
+BOOL bDeviceListPage = FALSE;
+BOOL bBlackListPage = FALSE;
+
+BOOL bUserRegistrationDone = FALSE;
+BOOL bUserLoginDone = FALSE;
+
+HWND ghwndSplash = NULL;
+HDC hSplashDC = NULL;
+HDC hMemDC = NULL;
+LONG SplashWidth, SplashHeight;
+
 
 
 // global variable declarations
@@ -531,14 +569,14 @@ void ProcessCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	}*/
 	case IDBTN_CREATE_USER:
 	{
-		gpRegistrationDetailsFile = fopen("UserRegistrationDetails.txt", "w");
+		//gpRegistrationDetailsFile = fopen("UserRegistrationDetails.txt", "w");
 
-		if (gpRegistrationDetailsFile == NULL)
-		{
-			MessageBox(hWnd, TEXT("Registration Details File Creation Failed."), TEXT("File I/O Error"), MB_OK);
-			bUserRegistrationDone = FALSE;
-		}
-		else
+		//if (gpRegistrationDetailsFile == NULL)
+		//{
+		//	MessageBox(hWnd, TEXT("Registration Details File Creation Failed."), TEXT("File I/O Error"), MB_OK);
+		//	bUserRegistrationDone = FALSE;
+		//}
+		//else
 		{
 			int inputLength;
 			BOOL validPwd = FALSE;
@@ -583,23 +621,35 @@ void ProcessCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				MessageBox(hWnd, TEXT("Please enter valid email ID"), TEXT("Validation Error"), MB_OK);
 			}
 
-			fprintf(gpRegistrationDetailsFile, "First Name: %s\nLast Name: %s\nEmail Id: %s\nUser Name: %s\nPassword: %s\n\n", firstName, lastName, emailId, userName, password);
+			if (validEmail == TRUE && validPwd == TRUE)
+			{
+				bUserRegistrationDone = TRUE;
+				gaInfo = (AdminInfo*)malloc(sizeof(AdminInfo));
+				memset(gaInfo, 0, sizeof(AdminInfo));
+				strcpy(gaInfo->firstName, firstName);
+				strcpy(gaInfo->lastName, lastName);
+				strcpy(gaInfo->emailID, emailId);
+				strcpy(gaInfo->userName, userName);
+				strcpy(gaInfo->password, password);
+
+				//fprintf(gpRegistrationDetailsFile, "First Name: %s\nLast Name: %s\nEmail Id: %s\nUser Name: %s\nPassword: %s\n\n", gaInfo->firstName, gaInfo->lastName, gaInfo->emailID, gaInfo->userName, gaInfo->password);
+				AddAdminDetails(gaInfo);
+			}
+			else
+			{
+				bUserRegistrationDone = FALSE;
+			}
 
 			free(firstName);
 			free(lastName);
 			free(emailId);
 			free(userName);
 			free(password);
-
-			if (validEmail == TRUE && validPwd == TRUE)
-				bUserRegistrationDone = TRUE;
-			else
-				bUserRegistrationDone = FALSE;
 		}
-		fclose(gpRegistrationDetailsFile);
-		gpRegistrationDetailsFile = NULL;
+		//fclose(gpRegistrationDetailsFile);
+		//gpRegistrationDetailsFile = NULL;
 
-		if (bUserRegistrationDone == FALSE)
+		if (bUserRegistrationDone == TRUE)
 		{
 			bLoginPage = TRUE;
 			bRegistrationPage = FALSE;
@@ -614,11 +664,11 @@ void ProcessCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	}
 	case IDBTN_LOGIN_USER:
 	{
-		gpRegistrationDetailsFile = fopen("UserRegistrationDetails.txt", "r");
+		//gpRegistrationDetailsFile = fopen("UserRegistrationDetails.txt", "r");
 
-		if (gpRegistrationDetailsFile == NULL)
+		if (gaInfo == NULL)
 		{
-			MessageBox(hWnd, TEXT("File Not Found."), TEXT("File I/O Error"), MB_OK);
+			MessageBox(hWnd, TEXT("Admin Details Not Found."), TEXT("File I/O Error"), MB_OK);
 			bUserLoginDone = FALSE;
 		}
 		else
@@ -636,7 +686,7 @@ void ProcessCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			char* passwordF = (char*)malloc(inputLength + 1);
 			GetWindowText(GetDlgItem(hWnd, IDTB_PASSWORD_LOGIN), passwordF, inputLength + 1);
 
-			while (fgets(line, 50, gpRegistrationDetailsFile) != NULL) {
+			/*while (fgets(line, 50, gpRegistrationDetailsFile) != NULL) {
 				if (strstr(line, "User Name: ") != NULL) {
 					sscanf(line, "User Name: %s", userName);
 				}
@@ -644,23 +694,25 @@ void ProcessCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 				if (strstr(line, "Password: ") != NULL) {
 					sscanf(line, "Password: %s", password);
 				}
-			}
+			}*/
 
-			if (strcmp(userName, userNameF) != 0 || strcmp(password, passwordF) != 0) {
+			if (strcmp(gaInfo->userName, userNameF) != 0 || strcmp(gaInfo->password, passwordF) != 0) {
 				MessageBox(hWnd, TEXT("Failed to login"), TEXT("Error"), MB_OK);
+				bUserLoginDone = FALSE;
 			}
 			else {
 				fprintf(gpFile, "Login successfully\n");
+				bUserLoginDone = TRUE;
 			}
 
 			free(userNameF);
 			free(passwordF);
 
-			fclose(gpRegistrationDetailsFile);
-			gpRegistrationDetailsFile = NULL;
-
-			bUserLoginDone = TRUE;
-
+			//fclose(gpRegistrationDetailsFile);
+			//gpRegistrationDetailsFile = NULL;
+		}
+		if (bUserLoginDone == TRUE)
+		{
 			bRegistrationPage = FALSE;
 			bLoginPage = FALSE;
 			bBlackListPage = FALSE;
@@ -729,10 +781,18 @@ void ProcessCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 #pragma region User Related Code
 BOOL CheckForRegisteredUser()
 {
-	//Search for Registered User in .Dat file
-	//If found return TRUE
-	//else
-	return FALSE;
+	gaInfo = (AdminInfo*)ReadAdminDetails();
+
+	if (gaInfo != NULL)
+	{
+		MessageBox(NULL, TEXT("Admin Found"), TEXT("Validation Error"), MB_OK);
+		return TRUE;
+	}
+	else
+	{
+		MessageBox(NULL, TEXT("Admin Not Found"), TEXT("Validation Error"), MB_OK);
+		return FALSE;
+	}
 }
 
 int ValidateEmail(char* email)
@@ -951,25 +1011,25 @@ void FetchUSBDeviceDetails(void)
 		// Fetch friendly name
 		if (!SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_FRIENDLYNAME, NULL,
 			(BYTE*)deviceInfo.friendlyName, sizeof(deviceInfo.friendlyName), NULL)) {
-			_tcscpy_s(deviceInfo.friendlyName, TEXT("Unavailable"));
+			strcpy(deviceInfo.friendlyName, TEXT("Unavailable"));
 		}
 
 		// Fetch manufacturer
 		if (!SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_MFG, NULL,
 			(BYTE*)deviceInfo.manufacturer, sizeof(deviceInfo.manufacturer), NULL)) {
-			_tcscpy_s(deviceInfo.manufacturer, TEXT("Unavailable"));
+			strcpy(deviceInfo.manufacturer, TEXT("Unavailable"));
 		}
 
 		// Fetch device description
 		if (!SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_DEVICEDESC, NULL,
 			(BYTE*)deviceInfo.deviceDescription, sizeof(deviceInfo.deviceDescription), NULL)) {
-			_tcscpy_s(deviceInfo.deviceDescription, TEXT("Unavailable"));
+			strcpy(deviceInfo.deviceDescription, TEXT("Unavailable"));
 		}
 
 		// Fetch class GUID
 		if (!SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_CLASSGUID, NULL,
 			(BYTE*)deviceInfo.classGuid, sizeof(deviceInfo.classGuid), NULL)) {
-			_tcscpy_s(deviceInfo.classGuid, TEXT("Unavailable"));
+			strcpy(deviceInfo.classGuid, TEXT("Unavailable"));
 		}
 
 		// Log device info

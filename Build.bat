@@ -1,4 +1,4 @@
-cl /c /EHsc DeviceDetector.cpp DeviceDetector_JSON.c cJSON.c
+cl /c /EHsc DeviceDetector.c DeviceDetector_JSON.c cJSON.c
 
 rc.exe DeviceDetector.rc
 

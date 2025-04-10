@@ -1,10 +1,15 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <Windows.h>
 #include <string.h>
+#include <stdlib.h>
+#include "DeviceDetector.h"
 #include "Headers/DeviceDetector_JSON.h"
 #include "cjson/cJSON.h"
 
 #define JSON_FILE "devices.json"
+
+FILE* gpConfigFile = NULL;
+BOOL bConfigFileOpen = FALSE;
+char* gConfigData = NULL;
 
 //Example 
 /********************************************************************
@@ -217,6 +222,172 @@ void parseDeviceString(const char* input, char* category, size_t cat_size, char*
         line = strtok_s(NULL, "\n", &context);
     }
 }
+
+#pragma region ConfigFile OpenClose
+
+void OpenConfigFile(char *readmode)
+{
+    MessageBox(NULL, TEXT("A"), TEXT("Validation Error"), MB_OK);
+    errno_t err = fopen_s(&gpConfigFile, JSON_FILE, readmode);
+    if (err != 0 || gpConfigFile == NULL)
+    {
+        printf("No existing JSON file found. Creating a new one.\n");
+        return;
+    }
+
+    MessageBox(NULL, TEXT("B"), TEXT("Validation Error"), MB_OK);
+    MessageBox(NULL, TEXT("C"), TEXT("Validation Error"), MB_OK);
+    
+    MessageBox(NULL, TEXT("D"), TEXT("Validation Error"), MB_OK);
+    DecryptConfigFile();
+    MessageBox(NULL, TEXT("E"), TEXT("Validation Error"), MB_OK);
+    bConfigFileOpen = TRUE;
+    
+}
+
+void DecryptConfigFile()
+{
+    fseek(gpConfigFile, 0, SEEK_END);
+    long length = ftell(gpConfigFile);
+    fseek(gpConfigFile, 0, SEEK_SET);
+
+    
+    gConfigData = (char*)malloc(length + 1);
+    fread(gConfigData, 1, length, gpConfigFile);
+    gConfigData[length] = '\0';
+    // decrypt config file here
+}
+
+void EncryptConfigFile()
+{
+    // encrypt config file here
+    fputs(gConfigData, gpConfigFile);
+    free(gConfigData);
+    gConfigData = NULL;
+}
+
+void CloseConfigFile()
+{
+    if (bConfigFileOpen == TRUE)
+    {
+        MessageBox(NULL, TEXT("F"), TEXT("Validation Error"), MB_OK);
+        EncryptConfigFile();
+        MessageBox(NULL, TEXT("G"), TEXT("Validation Error"), MB_OK);
+        fclose(gpConfigFile);
+        gpConfigFile = NULL;
+        MessageBox(NULL, TEXT("H"), TEXT("Validation Error"), MB_OK);
+    }
+}
+
+#pragma endregion
+
+#pragma region UserData
+
+void* ReadAdminDetails()
+{
+    PAdminInfo aInfo = NULL;
+    OpenConfigFile("r");
+    if (bConfigFileOpen == TRUE)
+    {
+        aInfo = (PAdminInfo)malloc(sizeof(AdminInfo));
+        memset(aInfo, 0, sizeof(AdminInfo));
+        cJSON* cObjRoot = cJSON_Parse(gConfigData);
+
+        MessageBox(NULL, TEXT("Root Found"), TEXT("Validation Error"), MB_OK);
+
+        cJSON* cObjAdmin = cJSON_GetObjectItemCaseSensitive(cObjRoot, "Admin");
+
+        if (cJSON_IsObject(cObjAdmin) == 0  ) 
+        {
+            cJSON_Delete(cObjRoot);
+            CloseConfigFile();
+            free(aInfo);
+            MessageBox(NULL, TEXT("Admin not Found"), TEXT("Validation Error"), MB_OK);
+            aInfo = NULL;
+            return NULL;
+        }
+        else
+        {
+            MessageBox(NULL, TEXT("Admin Found"), TEXT("Validation Error"), MB_OK);
+            cJSON* fName = cJSON_GetObjectItem(cObjAdmin, "firstName");
+            cJSON* lName = cJSON_GetObjectItem(cObjAdmin, "lastName");
+            cJSON* eMail = cJSON_GetObjectItem(cObjAdmin, "emailID");
+            cJSON* uName = cJSON_GetObjectItem(cObjAdmin, "userName");
+            cJSON* pWd = cJSON_GetObjectItem(cObjAdmin, "password");
+
+            strcpy(aInfo->firstName, cJSON_GetStringValue(fName));
+            strcpy(aInfo->lastName, cJSON_GetStringValue(lName));
+            strcpy(aInfo->emailID, cJSON_GetStringValue(eMail));
+            strcpy(aInfo->userName, cJSON_GetStringValue(uName));
+            strcpy(aInfo->password, cJSON_GetStringValue(pWd));
+        }
+        cJSON_Delete(cObjRoot);
+    }
+
+    CloseConfigFile();
+    return (void *)aInfo;
+}
+
+int AddAdminDetails(void* adminInfo)
+{
+    OpenConfigFile("a+");;
+    if (bConfigFileOpen == TRUE)
+    {
+        MessageBox(NULL, TEXT("1"), TEXT("Validation Error"), MB_OK);
+        AdminInfo* aInfo = (AdminInfo*)adminInfo;
+        cJSON* cObjRoot = cJSON_Parse(gConfigData);
+
+        if (!cObjRoot)
+        {
+            cObjRoot = cJSON_CreateObject();
+        }
+
+        MessageBox(NULL, TEXT("2"), TEXT("Validation Error"), MB_OK);
+        cJSON* newAdmin = cJSON_CreateObject();
+        cJSON_AddStringToObject(newAdmin, "firstName", aInfo->firstName);
+        cJSON_AddStringToObject(newAdmin, "lastName", aInfo->lastName);
+        cJSON_AddStringToObject(newAdmin, "emailID", aInfo->emailID);
+        cJSON_AddStringToObject(newAdmin, "userName", aInfo->userName);
+        cJSON_AddStringToObject(newAdmin, "password", aInfo->password);
+
+        cJSON_AddItemToObject(cObjRoot, "Admin", newAdmin);
+
+        char* json_str = cJSON_Print(cObjRoot);
+        MessageBox(NULL, TEXT("json_str Found"), TEXT("Validation Error"), MB_OK);
+        if (json_str == NULL)
+        {
+            cJSON_Delete(cObjRoot);
+            CloseConfigFile();
+            return -1; 
+        }
+
+        free(gConfigData);
+        gConfigData = NULL;
+
+        int jsonLen = strlen(json_str);
+
+        /*FILE* s = NULL;
+        errno_t err = fopen_s(&s, "xx.json", "w");
+        if (err != 0 || s == NULL)
+        {
+            MessageBox(NULL, TEXT("xx not Found"), TEXT("Validation Error"), MB_OK);
+            return;
+        }
+        fputs(json_str, s);
+        fclose(s);*/
+        
+        gConfigData = (char*)malloc(jsonLen + 1);
+        strcpy(gConfigData, json_str);
+
+        free(json_str);
+        cJSON_Delete(cObjRoot);
+    }
+
+    CloseConfigFile();
+    return 0;
+}
+#pragma endregion
+
 
  
 

@@ -1,7 +1,9 @@
-#ifdef __cplusplus
-
-extern "C"
-{
+#pragma once
+//#ifdef __cplusplus
+//
+//extern "C"
+//{
+//#endif
 
     typedef enum {
         DEVICE_PENDRIVE = 0,
@@ -19,8 +21,18 @@ extern "C"
     void parseDeviceString(const char* input, char* category, size_t cat_size, char* name, size_t name_size, char* config, size_t config_size);
 
 
+    void OpenConfigFile(char *);
+    void CloseConfigFile();
 
-}
-#endif
+    void EncryptConfigFile();
+    void DecryptConfigFile();
+
+    void* ReadAdminDetails();
+    int AddAdminDetails(void*);
+    //void ClearAdminDetails() { /* TBD  */ }
+
+//#ifdef __cplusplus
+//}
+//#endif
 
 

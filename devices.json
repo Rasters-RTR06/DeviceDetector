@@ -1,24 +1,9 @@
 {
-	"USB Device":	[{
-			"name":	"Pendrive",
-			"config":	"32GB"
-		}, {
-			"name":	"Charging Device",
-			"config":	"Fast Charger"
-		}],
-	"Monitor":	[{
-			"name":	"LG",
-			"config":	"1080p, 60Hz"
-		}, {
-			"name":	"Samsung",
-			"config":	"4K, 144Hz"
-		}],
-	"Bluetooth Device":	[{
-			"name":	"Mouse",
-			"config":	"Wireless"
-		}],
-	"Audio Device":	[{
-			"name":	"Headphone",
-			"config":	"Stereo, Noise Cancelling"
-		}]
+	"Admin":	{
+		"firstName":	"Imran",
+		"lastName":	"Pathan",
+		"emailID":	"imrans.android23@gmail.com",
+		"userName":	"imran",
+		"password":	"imran1234"
+	}
 }
