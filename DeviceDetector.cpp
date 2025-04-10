@@ -167,12 +167,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				bDeviceListPage = TRUE;
 				bLoginPage = FALSE;
 
+				HWND hLoginButton = GetDlgItem(hWnd, IDD_BUTTON);
+				if (hLoginButton)
+				{
+					ShowWindow(hLoginButton, SW_HIDE);
+				}
+
 				::CreateWindow(
 					TEXT("Static"), //Button type (Mostly Needed 1. Button 2. Static, 3. Edit)
 					TEXT("Attached Devices"), //Name on control
-					WS_CHILD | WS_VISIBLE, //Style reqiured (Explore as required)
-					250, 20, //left top position WITHIN WINDOW
-					120, 20, //Size (width n height)
+					WS_CHILD | WS_VISIBLE | SS_CENTER, //Style reqiured (Explore as required)
+					350, 20, //left top position WITHIN WINDOW
+					150, 20, //Size (width n height)
 					hWnd, // handle of app window
 					(HMENU)IDD_BUTTON, // ID of button to uniquely identify in othere area of program 
 					NULL,
@@ -213,6 +219,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				//previous button on show device list page
 			case IDD_PREV_BUTTON_SDL:
 				showDeviceListPageNumber--;
+				showFileDeviceList(hWnd, showDeviceListPageNumber);
+				break;
+
+			case IDD_FIRST_PAGE_BUTTON_SDL:
+				showDeviceListPageNumber = 1;
+				showFileDeviceList(hWnd, showDeviceListPageNumber);
+				break;
+			case IDD_END_PAGE_BUTTON_SDL:
+				showDeviceListPageNumber = totalNoOfDevicesToShow;
 				showFileDeviceList(hWnd, showDeviceListPageNumber);
 				break;
             
@@ -326,15 +341,15 @@ void ShowHidePage(HWND hWnd)
 
 }
 
-void CreateDeviceListDialogControls(HWND hWnd, char *category, char *name, char *config)
+void CreateDeviceListDialogControls(HWND hWnd, char *category, char *name, char *config, char *device_description, char *manufacturer,char *class_guid)
 {
 	
 	::CreateWindow(
 		TEXT("Static"), 
-		TEXT("Category      : "), 
-		WS_CHILD | WS_VISIBLE,
-		150, 50, 
-		120, 20, 
+		TEXT("Category :"), 
+		WS_CHILD | WS_VISIBLE | SS_CENTER,
+		150, 70, 
+		150, 20, 
 		hWnd, 
 		(HMENU)IDD_BUTTON,
 		NULL,
@@ -343,8 +358,8 @@ void CreateDeviceListDialogControls(HWND hWnd, char *category, char *name, char 
 	::CreateWindow(
 		TEXT("Static"),
 		TEXT(category), 
-		WS_CHILD | WS_VISIBLE, 
-		350, 50, 
+		WS_CHILD | WS_VISIBLE | SS_CENTER,
+		400, 70, 
 		200, 20, 
 		hWnd, 
 		(HMENU)IDD_BUTTON, 
@@ -353,10 +368,10 @@ void CreateDeviceListDialogControls(HWND hWnd, char *category, char *name, char 
 
 	::CreateWindow(
 		TEXT("Static"), 
-		TEXT("Device Name   : "), 
-		WS_CHILD | WS_VISIBLE, 
-		150, 150, 
-		120, 20, 
+		TEXT("Device Name :"), 
+		WS_CHILD | WS_VISIBLE | SS_CENTER,
+		150, 120, 
+		150, 20, 
 		hWnd, 
 		(HMENU)IDD_BUTTON, 
 		NULL,
@@ -365,8 +380,8 @@ void CreateDeviceListDialogControls(HWND hWnd, char *category, char *name, char 
 	::CreateWindow(
 		TEXT("Static"), 
 		TEXT(name), 
-		WS_CHILD | WS_VISIBLE, 
-		350, 150,
+		WS_CHILD | WS_VISIBLE | SS_CENTER,
+		400, 120,
 		200, 20,
 		hWnd, 
 		(HMENU)IDD_BUTTON,  
@@ -377,9 +392,9 @@ void CreateDeviceListDialogControls(HWND hWnd, char *category, char *name, char 
 	::CreateWindow(
 		TEXT("Static"),
 		TEXT("Configuration : "),
-		WS_CHILD | WS_VISIBLE, 
-		150, 250, 
-		120, 20, 
+		WS_CHILD | WS_VISIBLE | SS_CENTER,
+		150, 170, 
+		150, 20, 
 		hWnd, 
 		(HMENU)IDD_BUTTON, 
 		NULL,
@@ -389,11 +404,111 @@ void CreateDeviceListDialogControls(HWND hWnd, char *category, char *name, char 
 	::CreateWindow(
 		TEXT("Static"), 
 		TEXT(config), 
-		WS_CHILD | WS_VISIBLE,
-		350, 250, 
+		WS_CHILD | WS_VISIBLE | SS_CENTER,
+		400, 170, 
 		200, 20, 
 		hWnd,
 		(HMENU)IDD_BUTTON,
+		NULL,
+		NULL);
+
+	::CreateWindow(
+		TEXT("Static"),
+		TEXT("Manufacturer : "),
+		WS_CHILD | WS_VISIBLE | SS_CENTER,
+		150, 220,
+		150, 20,
+		hWnd,
+		(HMENU)IDD_BUTTON,
+		NULL,
+		NULL);
+
+	::CreateWindow(
+		TEXT("Static"),
+		TEXT(manufacturer),
+		WS_CHILD | WS_VISIBLE | SS_CENTER,
+		400, 220,
+		200, 20,
+		hWnd,
+		(HMENU)IDD_BUTTON,
+		NULL,
+		NULL);
+
+	::CreateWindow(
+		TEXT("Static"),
+		TEXT("Device Description : "),
+		WS_CHILD | WS_VISIBLE | SS_CENTER,
+		150, 270,
+		150, 20,
+		hWnd,
+		(HMENU)IDD_BUTTON,
+		NULL,
+		NULL);
+
+	::CreateWindow(
+		TEXT("Static"),
+		TEXT(device_description),
+		WS_CHILD | WS_VISIBLE | SS_CENTER,
+		400, 270,
+		220, 20,
+		hWnd,
+		(HMENU)IDD_BUTTON,
+		NULL,
+		NULL);
+
+	::CreateWindow(
+		TEXT("Static"),
+		TEXT("Class GUID : "),
+		WS_CHILD | WS_VISIBLE | SS_CENTER,
+		150, 320,
+		150, 20,
+		hWnd,
+		(HMENU)IDD_BUTTON,
+		NULL,
+		NULL);
+
+	::CreateWindow(
+		TEXT("Static"),
+		TEXT(class_guid),
+		WS_CHILD | WS_VISIBLE | SS_CENTER,
+		400, 320,
+		220, 20,
+		hWnd,
+		(HMENU)IDD_BUTTON,
+		NULL,
+		NULL);
+
+	::CreateWindow(
+		TEXT("Static"),
+		TEXT("Comments :"),
+		WS_CHILD | WS_VISIBLE | SS_CENTER,
+		150, 370,
+		150, 20,
+		hWnd,
+		(HMENU)IDD_BUTTON,
+		NULL,
+		NULL);
+
+	::CreateWindow(
+		TEXT("Edit"),
+		TEXT(""),
+		WS_CHILD | WS_VISIBLE,
+		400, 370,
+		250, 50,
+		hWnd,
+		(HMENU)IDD_BUTTON,
+		NULL,
+		NULL);
+
+	//show First page button
+	::CreateWindow(
+		TEXT("Button"),
+		TEXT("|<"),
+		WS_CHILD | WS_VISIBLE | SS_CENTER | WS_BORDER,
+		270, 450,
+		30, 30,
+		hWnd,
+		(HMENU)IDD_FIRST_PAGE_BUTTON_SDL,
 		NULL,
 		NULL);
 
@@ -401,9 +516,9 @@ void CreateDeviceListDialogControls(HWND hWnd, char *category, char *name, char 
 	::CreateWindow(
 		TEXT("Button"),
 		TEXT("<"),
-		WS_CHILD | WS_VISIBLE, 
-		240, 400, 
-		50, 50,
+		WS_CHILD | WS_VISIBLE | SS_CENTER | WS_BORDER,  
+		300, 450, 
+		30, 30,
 		hWnd, 
 		(HMENU)IDD_PREV_BUTTON_SDL,
 		NULL,
@@ -422,9 +537,9 @@ void CreateDeviceListDialogControls(HWND hWnd, char *category, char *name, char 
 	::CreateWindow(
 		TEXT("Static"),
 		TEXT(numberText),
-		WS_CHILD | WS_VISIBLE, 
-		300, 400, 
-		50, 50, 
+		WS_CHILD | WS_VISIBLE | SS_CENTER | WS_BORDER,
+		400, 450, 
+		40, 25, 
 		hWnd, 
 		(HMENU)IDD_TEXT, 
 		NULL,
@@ -435,11 +550,45 @@ void CreateDeviceListDialogControls(HWND hWnd, char *category, char *name, char 
 	::CreateWindow(
 		TEXT("Button"),
 		TEXT(">"),
-		WS_CHILD | WS_VISIBLE,
-		360, 400, 
-		50, 50, 
+		WS_CHILD | WS_VISIBLE | SS_CENTER | WS_BORDER,
+		500, 450, 
+		30, 30, 
 		hWnd, 
 		(HMENU)IDD_NEXT_BUTTON_SDL,
+		NULL,
+		NULL);
+
+	//show last page button
+	::CreateWindow(
+		TEXT("Button"),
+		TEXT(">|"),
+		WS_CHILD | WS_VISIBLE | SS_CENTER | WS_BORDER,
+		530, 450,
+		30, 30,
+		hWnd,
+		(HMENU)IDD_END_PAGE_BUTTON_SDL,
+		NULL,
+		NULL);
+
+	::CreateWindow( 
+		TEXT("Button"), 
+		TEXT("Delete"), 
+		WS_CHILD | WS_VISIBLE | SS_CENTER | WS_BORDER,
+		280, 485, 
+		60, 30,
+		hWnd, 
+		(HMENU)IDD_DELETE_BUTTON_SDL, 
+		NULL,
+		NULL); 
+
+	::CreateWindow(
+		TEXT("Button"),
+		TEXT("Add to Black List"),
+		WS_CHILD | WS_VISIBLE | SS_CENTER | WS_BORDER,
+		460, 485,
+		120, 30,
+		hWnd,
+		(HMENU)IDD_ADD_TO_BLACK_LIST_BUTTON_SDL,
 		NULL,
 		NULL);
 }
@@ -449,8 +598,17 @@ void showFileDeviceList(HWND hwnd,int pageNo)
 	HDC hdc;
 	RECT rc;
 	char category[50], name[50], config[100];
+	char device_description[50], manufacturer[50], class_guid[50];
 
-	
+	bDeviceListPage = TRUE; 
+	bLoginPage = FALSE; 
+
+	HWND hLoginButton = GetDlgItem(hwnd, IDD_BUTTON);
+	if (hLoginButton)
+	{
+		ShowWindow(hLoginButton, SW_HIDE);
+	}
+
 	GetClientRect(hwnd, &rc);
 	hdc = GetDC(hwnd);
 
@@ -459,8 +617,9 @@ void showFileDeviceList(HWND hwnd,int pageNo)
 	//{
 
 	if (pageNo > totalNoOfDevicesToShow)
+	{
 		pageNo = 1;
-
+	}
 		char * deviceInfo = getDeviceByID(pageNo);
 	
 		parseDeviceString(deviceInfo, category, (unsigned int)sizeof(category) , name, (unsigned int)sizeof(name), config, (unsigned int)sizeof(config));
@@ -470,7 +629,7 @@ void showFileDeviceList(HWND hwnd,int pageNo)
 		fprintf(gpFile, "config:%s\n\n\n", config);
 
 
-		CreateDeviceListDialogControls(hwnd, category, name, config);
+		CreateDeviceListDialogControls(hwnd, category, name, config,device_description, manufacturer,class_guid);
 
 	//}
 }
