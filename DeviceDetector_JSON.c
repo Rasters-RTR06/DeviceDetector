@@ -450,7 +450,7 @@ int DeviceInfoListLength()
 
         cJSON* cObjDeviceList = cJSON_GetObjectItemCaseSensitive(cObjRoot, "DeviceList");
 
-        if (!cJSON_IsArray(cObjDeviceArray) && cJSON_IsNull(cObjDeviceArray))
+        if (!cJSON_IsArray(cObjDeviceList) && cJSON_IsNull(cObjDeviceList))
         {
 
         }
@@ -503,13 +503,12 @@ void* GetDeviceInfoItemFromIndex(int index)
     return (void*)dInfo;
 }
 
-int FindDeviceInDeviceList(char* deviceInstanceID)
+int FindDeviceInDeviceList(char* cDeviceInstanceID)
 {
     int deviceFound = 0;
     OpenConfigFile("r");
     if (bConfigFileOpen == TRUE)
     {
-        dInfo = (PDeviceInfo)malloc(sizeof(DeviceInfo));
         cJSON* cObjRoot = cJSON_Parse(gConfigData);
 
         cJSON* cObjDeviceList = cJSON_GetObjectItemCaseSensitive(cObjRoot, "DeviceList");
@@ -520,7 +519,7 @@ int FindDeviceInDeviceList(char* deviceInstanceID)
 
             cJSON* deviceInstanceID = cJSON_GetObjectItem(deviceInfo, "deviceInstanceID");
 
-            if (strcmp(deviceInstanceID->valuestring, deviceInstanceID) == 0)
+            if (strcmp(deviceInstanceID->valuestring, cDeviceInstanceID) == 0)
             {
                 deviceFound = 1;
                 break;
@@ -540,7 +539,6 @@ int RemoveDeviceFromDeviceList(int index)
     OpenConfigFile("a+");
     if (bConfigFileOpen == TRUE)
     {
-        dInfo = (PDeviceInfo)malloc(sizeof(DeviceInfo));
         cJSON* cObjRoot = cJSON_Parse(gConfigData);
 
         cJSON* cObjDeviceList = cJSON_GetObjectItemCaseSensitive(cObjRoot, "DeviceList");
@@ -574,7 +572,7 @@ int RemoveDeviceFromDeviceList(int index)
 #pragma endregion
 
 #pragma region BlackList
-int AddDeviceToBlackList(void*)
+int AddDeviceToBlackList(void* deviceInfo)
 {
     OpenConfigFile("a+");;
     if (bConfigFileOpen == TRUE)
@@ -690,13 +688,12 @@ void* GetBlackListItemFromIndex(int index)
     return (void*)dInfo;
 }
 
-int FindDeviceInBlackList(char*)
+int FindDeviceInBlackList(char* cDeviceInstanceID)
 {
     int deviceFound = 0;
     OpenConfigFile("r");
     if (bConfigFileOpen == TRUE)
     {
-        dInfo = (PDeviceInfo)malloc(sizeof(DeviceInfo));
         cJSON* cObjRoot = cJSON_Parse(gConfigData);
 
         cJSON* cObjBlackList = cJSON_GetObjectItemCaseSensitive(cObjRoot, "BlackList");
@@ -707,7 +704,7 @@ int FindDeviceInBlackList(char*)
 
             cJSON* deviceInstanceID = cJSON_GetObjectItem(deviceInfo, "deviceInstanceID");
 
-            if (strcmp(deviceInstanceID->valuestring, deviceInstanceID) == 0)
+            if (strcmp(deviceInstanceID->valuestring, cDeviceInstanceID) == 0)
             {
                 deviceFound = 1;
                 break;

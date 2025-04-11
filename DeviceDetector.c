@@ -309,7 +309,7 @@ void AddMenu(HWND hWnd)
 	HMENU hMenuFile = CreateMenu();
 	AppendMenu(hMenuFile, MF_STRING, IDM_FILE_DEVICE_LIST, TEXT("Device List"));
 	AppendMenu(hMenuFile, MF_STRING, IDM_FILE_BLACK_LIST,  TEXT("Black List"));
-	AppendMenu(hMenuFile, MF_SEPARATOR, NULL, NULL);
+	AppendMenu(hMenuFile, MF_SEPARATOR, 0, NULL);
 	AppendMenu(hMenuFile, MF_STRING, IDM_FILE_EXIT, TEXT("Exit"));
 
 	AppendMenu(ghMenu, MF_POPUP, (UINT_PTR)hMenuFile, TEXT("File"));
