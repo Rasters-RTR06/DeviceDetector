@@ -24,12 +24,24 @@
     void OpenConfigFile(char *);
     void CloseConfigFile();
 
-    void EncryptConfigFile();
+    void EncryptConfigFile(int );
     void DecryptConfigFile();
 
     void* ReadAdminDetails();
     int AddAdminDetails(void*);
-    //void ClearAdminDetails() { /* TBD  */ }
+
+    int AddDeviceToDeviceInfoList(void *);
+    int DeviceInfoListLength();
+    void* GetDeviceInfoItemFromIndex(int);
+    int FindDeviceInDeviceList(char*);
+    int RemoveDeviceFromDeviceList(int);
+
+
+    int AddDeviceToBlackList(void*);
+    int BlackListLength();
+    void* GetBlackListItemFromIndex(int);
+    int FindDeviceInBlackList(char*);
+    int RemoveDeviceFromBlackList(int);
 
 //#ifdef __cplusplus
 //}

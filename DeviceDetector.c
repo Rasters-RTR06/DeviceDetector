@@ -850,9 +850,8 @@ void FetchUSBDeviceDetails(void)
 	DWORD member_index = 0;
 	SP_DEVINFO_DATA dev_info_data;
 	SP_DEVICE_INTERFACE_DATA dev_interface_data;
-	DeviceInfo deviceInfo;
+	
 	static TCHAR str_buff[2048];
-	struct usbstor_node* cur_node = NULL;
 
 	if ((dev_handle = SetupDiGetClassDevs(&GUID_DEVINTERFACE_DISK, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE)) == INVALID_HANDLE_VALUE)
 	{
@@ -878,165 +877,25 @@ void FetchUSBDeviceDetails(void)
 			continue;
 		}
 
+		// Buffer to hold the unique ID
+		char deviceInstanceID[MAX_DEVICE_ID_LEN];
 
 		//If we can't get instance ID (and it's not because of insufficient buffer length), silently skip to the next device
-		if ((!SetupDiGetDeviceInstanceId(dev_handle, &dev_info_data, str_buff, sizeof(str_buff), 0)) &&
+		// Retrieve the Device Instance ID (Parent Value)
+		if ((!SetupDiGetDeviceInstanceId(dev_handle, &dev_info_data, deviceInstanceID, sizeof(deviceInstanceID), 0)) &&
 			(GetLastError() != ERROR_INSUFFICIENT_BUFFER))
 		{
 			continue;
 		}
 
-		fprintf(gpFile, "In for loop: index = %d\n", member_index);
-		fprintf(gpFile, "Device Instance id : %s\n", str_buff);
+		BOOL deviceLogged = FALSE;
+		BOOL deviceBlackListed = FALSE;
 
-		/*	Capture Below Fields same as SPDRP_FRIENDLYNAME & SetupDiGetDeviceRegistryProperty
-			1. Friendly Name
-			2. Manufacturer
-			3. Device Description
-			4. Class Guid
-			5. Display Name
-			6. Install Date
-			7. Last Arrival Date*/
-
-			// Try to get the device's friendly name. Skip if we fail because of non-insufficient-buffer error
-		if (SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_FRIENDLYNAME, NULL,
-			(BYTE*)str_buff, sizeof(str_buff), NULL))
+		deviceLogged = (FindDeviceInDeviceList(deviceInstanceID) == 1) ? TRUE : FALSE;
+		if (deviceLogged == TRUE)
 		{
-			fprintf(gpFile, "Device friendly name : %s\n", str_buff);
+			deviceBlackListed = (FindDeviceInBlackList(deviceInstanceID) == 1) ? TRUE : FALSE;
 		}
-		else
-		{
-			// Skip the device if the error isn't related to insufficient buffer We don't want unnamed devices
-			if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
-			{
-				continue;
-			}
-			else
-			{
-				fprintf(gpFile, "Device friendly name : Friendly Name Too Long\n");
-			}
-		}
-
-		// Try to get the device manufacturer
-		if (SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_MFG, NULL,
-			(BYTE*)str_buff, sizeof(str_buff), NULL))
-		{
-			fprintf(gpFile, "Device Manufacturer: %s\n", str_buff);
-		}
-		else
-		{
-			DWORD errorCode = GetLastError();
-			if (errorCode == ERROR_INSUFFICIENT_BUFFER)
-			{
-				fprintf(gpFile, "Device Manufacturer: Manufacturer Name Too Long\n");
-			}
-			else if (errorCode == ERROR_INVALID_DATA)
-			{
-				fprintf(gpFile, "Device Manufacturer: No Manufacturer Property Found\n");
-			}
-			else
-			{
-				fprintf(gpFile, "Device Manufacturer: Failed with Error Code %lu\n", errorCode);
-			}
-		}
-
-		// Try to get the device description
-		if (SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_DEVICEDESC, NULL,
-			(BYTE*)str_buff, sizeof(str_buff), NULL))
-		{
-			fprintf(gpFile, "Device Description: %s\n", str_buff);
-		}
-		else
-		{
-			DWORD errorCode = GetLastError();
-			if (errorCode == ERROR_INSUFFICIENT_BUFFER)
-			{
-				fprintf(gpFile, "Device Description: Description Too Long\n");
-			}
-			else if (errorCode == ERROR_INVALID_DATA)
-			{
-				fprintf(gpFile, "Device Description: No Description Property Found\n");
-			}
-			else
-			{
-				fprintf(gpFile, "Device Description: Failed with Error Code %lu\n", errorCode);
-			}
-		}
-
-		// Try to get the GUID that represents the device setup class
-		if (SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_CLASSGUID, NULL,
-			(BYTE*)str_buff, sizeof(str_buff), NULL))
-		{
-			fprintf(gpFile, "Device Setup Class GUID: %s\n", str_buff);
-		}
-		else
-		{
-			DWORD errorCode = GetLastError();
-			if (errorCode == ERROR_INSUFFICIENT_BUFFER)
-			{
-				fprintf(gpFile, "Device Setup Class GUID: GUID Too Long\n");
-			}
-			else if (errorCode == ERROR_INVALID_DATA)
-			{
-				fprintf(gpFile, "Device Setup Class GUID: No GUID Property Found\n");
-			}
-			else
-			{
-				fprintf(gpFile, "Device Setup Class GUID: Failed with Error Code %lu\n", errorCode);
-			}
-		}
-
-		// Buffer to hold the unique ID
-		CHAR deviceInstanceID[MAX_DEVICE_ID_LEN];
-
-		// Retrieve the Device Instance ID (Parent Value)
-		if (SetupDiGetDeviceInstanceId(dev_handle, &dev_info_data, deviceInstanceID,
-			sizeof(deviceInstanceID), NULL))
-		{
-			fprintf(gpFile, "Parent Value (Unique ID): %s\n", deviceInstanceID);
-		}
-		else
-		{
-			DWORD errorCode = GetLastError();
-			if (errorCode == ERROR_INSUFFICIENT_BUFFER)
-			{
-				fprintf(gpFile, "Parent Value: ID Too Long\n");
-			}
-			else
-			{
-				fprintf(gpFile, "Failed to retrieve Parent Value. Error Code: %lu\n", errorCode);
-			}
-		}
-
-		// Fetch friendly name
-		if (!SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_FRIENDLYNAME, NULL,
-			(BYTE*)deviceInfo.friendlyName, sizeof(deviceInfo.friendlyName), NULL)) {
-			strcpy(deviceInfo.friendlyName, TEXT("Unavailable"));
-		}
-
-		// Fetch manufacturer
-		if (!SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_MFG, NULL,
-			(BYTE*)deviceInfo.manufacturer, sizeof(deviceInfo.manufacturer), NULL)) {
-			strcpy(deviceInfo.manufacturer, TEXT("Unavailable"));
-		}
-
-		// Fetch device description
-		if (!SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_DEVICEDESC, NULL,
-			(BYTE*)deviceInfo.deviceDescription, sizeof(deviceInfo.deviceDescription), NULL)) {
-			strcpy(deviceInfo.deviceDescription, TEXT("Unavailable"));
-		}
-
-		// Fetch class GUID
-		if (!SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_CLASSGUID, NULL,
-			(BYTE*)deviceInfo.classGuid, sizeof(deviceInfo.classGuid), NULL)) {
-			strcpy(deviceInfo.classGuid, TEXT("Unavailable"));
-		}
-
-		// Log device info
-		fprintf(gpFile, "  Friendly Name: %s\n", deviceInfo.friendlyName);
-		fprintf(gpFile, "  Manufacturer: %s\n", deviceInfo.manufacturer);
-		fprintf(gpFile, "  Description: %s\n", deviceInfo.deviceDescription);
-		fprintf(gpFile, "  Class GUID: %s\n", deviceInfo.classGuid);
 
 		// Try to get the device interface data
 		if (!SetupDiEnumDeviceInterfaces(dev_handle, NULL, &GUID_DEVINTERFACE_DISK, member_index, &dev_interface_data))
@@ -1082,29 +941,56 @@ void FetchUSBDeviceDetails(void)
 					}
 					else
 					{
-						PDISK_PARTITION_INFO geometry_part_info = DiskGeometryGetPartition(storage_geometry);
-						STORAGE_DEVICE_NUMBER storage_device_num;
-
-						bytes_returned = 0;
-						fprintf(gpFile, "Total bytes : %lld\n", storage_geometry->DiskSize.QuadPart);
-
-						// Get the disk signature if the device layout is MBR Otherwise, we'll have to randomly set it if we are to use IOCTL_DISK_SET_DRIVE_LAYOUT
-						if (geometry_part_info->PartitionStyle == PARTITION_STYLE_MBR)
+						if (deviceLogged == FALSE)
 						{
-							fprintf(gpFile, "Disk ID : %lu\n", geometry_part_info->Mbr.Signature);
-						}
+							DeviceInfo* deviceInfo = (DeviceInfo*)malloc(sizeof(DeviceInfo));
+							memset(deviceInfo, 0, sizeof(DeviceInfo));
 
-						// Try to get the device number
-						if (!DeviceIoControl(disk_handle,
-							IOCTL_STORAGE_GET_DEVICE_NUMBER, NULL, 0,
-							(LPVOID)&storage_device_num, sizeof(storage_device_num), &bytes_returned, NULL))
-						{
-							iteration_error = TRUE;
+							// Fetch friendly name
+							if (!SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_FRIENDLYNAME, NULL,
+								(BYTE*)deviceInfo->friendlyName, sizeof(deviceInfo->friendlyName), NULL)) {
+								strcpy(deviceInfo->friendlyName, TEXT(""));
+							}
+
+							// Fetch manufacturer
+							if (!SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_MFG, NULL,
+								(BYTE*)deviceInfo->manufacturer, sizeof(deviceInfo->manufacturer), NULL)) {
+								strcpy(deviceInfo->manufacturer, TEXT(""));
+							}
+
+							// Fetch device description
+							if (!SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_DEVICEDESC, NULL,
+								(BYTE*)deviceInfo->deviceDescription, sizeof(deviceInfo->deviceDescription), NULL)) {
+								strcpy(deviceInfo->deviceDescription, TEXT(""));
+							}
+
+							// Fetch class GUID
+							if (!SetupDiGetDeviceRegistryProperty(dev_handle, &dev_info_data, SPDRP_CLASSGUID, NULL,
+								(BYTE*)deviceInfo->classGuid, sizeof(deviceInfo->classGuid), NULL)) {
+								strcpy(deviceInfo->classGuid, TEXT(""));
+							}
+
+							// Log device info
+							strcpy(deviceInfo->deviceInstanceID, deviceInstanceID);
+							strcpy(deviceInfo->devicePath, dev_int_detail_ptr->DevicePath);
+							sprintf(deviceInfo->totalBytes, "%lld", storage_geometry->DiskSize.QuadPart);
+
+							fprintf(gpFile, "Parent Value (Unique ID): %s\n", deviceInfo->deviceInstanceID);
+							fprintf(gpFile, "Friendly Name: %s\n", deviceInfo->friendlyName);
+							fprintf(gpFile, "Manufacturer: %s\n", deviceInfo->manufacturer);
+							fprintf(gpFile, "Description: %s\n", deviceInfo->deviceDescription);
+							fprintf(gpFile, "Class GUID: %s\n", deviceInfo->classGuid);
+							fprintf(gpFile, "Total bytes : %s\n", deviceInfo->totalBytes);
+							fprintf(gpFile, "Device Path : %s\n", deviceInfo->devicePath);
+
+							free(deviceInfo);
 						}
 						else
 						{
-							fprintf(gpFile, "Device Number : %lu\n", storage_device_num.DeviceNumber);
-							fprintf(gpFile, "Device Path : %s\n", dev_int_detail_ptr->DevicePath);
+							if (deviceBlackListed == TRUE)
+							{
+								//Try to Desconnect from here only
+							}
 						}
 					}
 
@@ -1118,7 +1004,6 @@ void FetchUSBDeviceDetails(void)
 			}
 		}
 
-		cur_node = NULL;
 	}
 
 	SetupDiDestroyDeviceInfoList(dev_handle);

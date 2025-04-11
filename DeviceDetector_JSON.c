@@ -10,6 +10,7 @@
 FILE* gpConfigFile = NULL;
 BOOL bConfigFileOpen = FALSE;
 char* gConfigData = NULL;
+int gIsWriteNeeded = 0;
 
 //Example 
 /********************************************************************
@@ -227,7 +228,6 @@ void parseDeviceString(const char* input, char* category, size_t cat_size, char*
 
 void OpenConfigFile(char *readmode)
 {
-    MessageBox(NULL, TEXT("A"), TEXT("Validation Error"), MB_OK);
     errno_t err = fopen_s(&gpConfigFile, JSON_FILE, readmode);
     if (err != 0 || gpConfigFile == NULL)
     {
@@ -235,14 +235,17 @@ void OpenConfigFile(char *readmode)
         return;
     }
 
-    MessageBox(NULL, TEXT("B"), TEXT("Validation Error"), MB_OK);
-    MessageBox(NULL, TEXT("C"), TEXT("Validation Error"), MB_OK);
-    
-    MessageBox(NULL, TEXT("D"), TEXT("Validation Error"), MB_OK);
+    if (strcmp(readmode, "a+") == 0)
+    {
+        gIsWriteNeeded = 1;
+    }
+    else
+    {
+        gIsWriteNeeded = 0;
+    }
+
     DecryptConfigFile();
-    MessageBox(NULL, TEXT("E"), TEXT("Validation Error"), MB_OK);
     bConfigFileOpen = TRUE;
-    
 }
 
 void DecryptConfigFile()
@@ -258,10 +261,13 @@ void DecryptConfigFile()
     // decrypt config file here
 }
 
-void EncryptConfigFile()
+void EncryptConfigFile(int writeToFile)
 {
     // encrypt config file here
-    fputs(gConfigData, gpConfigFile);
+    if (writeToFile == 1)
+    {
+        fputs(gConfigData, gpConfigFile);
+    }
     free(gConfigData);
     gConfigData = NULL;
 }
@@ -270,12 +276,9 @@ void CloseConfigFile()
 {
     if (bConfigFileOpen == TRUE)
     {
-        MessageBox(NULL, TEXT("F"), TEXT("Validation Error"), MB_OK);
-        EncryptConfigFile();
-        MessageBox(NULL, TEXT("G"), TEXT("Validation Error"), MB_OK);
+        EncryptConfigFile(gIsWriteNeeded);
         fclose(gpConfigFile);
         gpConfigFile = NULL;
-        MessageBox(NULL, TEXT("H"), TEXT("Validation Error"), MB_OK);
     }
 }
 
@@ -293,22 +296,19 @@ void* ReadAdminDetails()
         memset(aInfo, 0, sizeof(AdminInfo));
         cJSON* cObjRoot = cJSON_Parse(gConfigData);
 
-        MessageBox(NULL, TEXT("Root Found"), TEXT("Validation Error"), MB_OK);
-
         cJSON* cObjAdmin = cJSON_GetObjectItemCaseSensitive(cObjRoot, "Admin");
 
-        if (cJSON_IsObject(cObjAdmin) == 0  ) 
+        if (cJSON_IsObject(cObjAdmin) == 0) 
         {
             cJSON_Delete(cObjRoot);
             CloseConfigFile();
             free(aInfo);
-            MessageBox(NULL, TEXT("Admin not Found"), TEXT("Validation Error"), MB_OK);
+            
             aInfo = NULL;
             return NULL;
         }
         else
         {
-            MessageBox(NULL, TEXT("Admin Found"), TEXT("Validation Error"), MB_OK);
             cJSON* fName = cJSON_GetObjectItem(cObjAdmin, "firstName");
             cJSON* lName = cJSON_GetObjectItem(cObjAdmin, "lastName");
             cJSON* eMail = cJSON_GetObjectItem(cObjAdmin, "emailID");
@@ -333,7 +333,6 @@ int AddAdminDetails(void* adminInfo)
     OpenConfigFile("a+");;
     if (bConfigFileOpen == TRUE)
     {
-        MessageBox(NULL, TEXT("1"), TEXT("Validation Error"), MB_OK);
         AdminInfo* aInfo = (AdminInfo*)adminInfo;
         cJSON* cObjRoot = cJSON_Parse(gConfigData);
 
@@ -342,7 +341,6 @@ int AddAdminDetails(void* adminInfo)
             cObjRoot = cJSON_CreateObject();
         }
 
-        MessageBox(NULL, TEXT("2"), TEXT("Validation Error"), MB_OK);
         cJSON* newAdmin = cJSON_CreateObject();
         cJSON_AddStringToObject(newAdmin, "firstName", aInfo->firstName);
         cJSON_AddStringToObject(newAdmin, "lastName", aInfo->lastName);
@@ -353,7 +351,7 @@ int AddAdminDetails(void* adminInfo)
         cJSON_AddItemToObject(cObjRoot, "Admin", newAdmin);
 
         char* json_str = cJSON_Print(cObjRoot);
-        MessageBox(NULL, TEXT("json_str Found"), TEXT("Validation Error"), MB_OK);
+        
         if (json_str == NULL)
         {
             cJSON_Delete(cObjRoot);
@@ -386,6 +384,379 @@ int AddAdminDetails(void* adminInfo)
     CloseConfigFile();
     return 0;
 }
+#pragma endregion
+
+#pragma region DeviceInfo
+
+int AddDeviceToDeviceInfoList(void* deviceInfo)
+{
+    OpenConfigFile("a+");;
+    if (bConfigFileOpen == TRUE)
+    {
+        DeviceInfo* dInfo = (DeviceInfo*)deviceInfo;
+        cJSON* cObjRoot = cJSON_Parse(gConfigData);
+
+        cJSON* cObjDeviceArray = cJSON_GetObjectItemCaseSensitive(cObjRoot, "DeviceList");
+        if (!cJSON_IsArray(cObjDeviceArray) && cJSON_IsNull(cObjDeviceArray))
+        {
+            cObjDeviceArray = cJSON_CreateArray();
+            cJSON_AddItemToObject(cObjRoot, "DeviceList", cObjDeviceArray);
+        }
+
+        cJSON* newDevice = cJSON_CreateObject();
+        cJSON_AddStringToObject(newDevice, "comment", dInfo->comment);
+        cJSON_AddStringToObject(newDevice, "totalBytes", dInfo->totalBytes);
+        cJSON_AddStringToObject(newDevice, "deviceInstanceID", dInfo->deviceInstanceID);
+        cJSON_AddStringToObject(newDevice, "devicePath", dInfo->devicePath);
+        cJSON_AddStringToObject(newDevice, "friendlyName", dInfo->friendlyName);
+        cJSON_AddStringToObject(newDevice, "manufacturer", dInfo->manufacturer);
+        cJSON_AddStringToObject(newDevice, "deviceDescription", dInfo->deviceDescription);
+        cJSON_AddStringToObject(newDevice, "classGuid", dInfo->classGuid);
+
+        cJSON_AddItemToArray(cObjDeviceArray, newDevice);
+
+        char* json_str = cJSON_Print(cObjRoot);
+        
+        if (json_str == NULL)
+        {
+            cJSON_Delete(cObjRoot);
+            CloseConfigFile();
+            return -1;
+        }
+
+        free(gConfigData);
+        gConfigData = NULL;
+
+        int jsonLen = strlen(json_str);
+
+        gConfigData = (char*)malloc(jsonLen + 1);
+        strcpy(gConfigData, json_str);
+
+        free(json_str);
+        cJSON_Delete(cObjRoot);
+    }
+
+    CloseConfigFile();
+    return 0;
+}
+
+int DeviceInfoListLength()
+{
+    int deviceListLen = 0;
+    OpenConfigFile("r");
+    if (bConfigFileOpen == TRUE)
+    {
+        cJSON* cObjRoot = cJSON_Parse(gConfigData);
+
+        cJSON* cObjDeviceList = cJSON_GetObjectItemCaseSensitive(cObjRoot, "DeviceList");
+
+        if (!cJSON_IsArray(cObjDeviceArray) && cJSON_IsNull(cObjDeviceArray))
+        {
+
+        }
+        else
+        {
+            deviceListLen = cJSON_GetArraySize(cObjDeviceList);
+        }
+        cJSON_Delete(cObjRoot);
+    }
+
+    CloseConfigFile();
+    return deviceListLen;
+}
+
+void* GetDeviceInfoItemFromIndex(int index)
+{
+    PDeviceInfo dInfo = NULL;
+    OpenConfigFile("r");
+    if (bConfigFileOpen == TRUE)
+    {
+        dInfo = (PDeviceInfo)malloc(sizeof(DeviceInfo));
+        cJSON* cObjRoot = cJSON_Parse(gConfigData);
+
+        cJSON* cObjDeviceList = cJSON_GetObjectItemCaseSensitive(cObjRoot, "DeviceList");
+
+        cJSON* deviceInfo = cJSON_GetArrayItem(cObjDeviceList, index);
+
+        cJSON* comment = cJSON_GetObjectItem(deviceInfo, "comment");
+        cJSON* totalBytes = cJSON_GetObjectItem(deviceInfo, "totalBytes");
+        cJSON* deviceInstanceID = cJSON_GetObjectItem(deviceInfo, "deviceInstanceID");
+        cJSON* devicePath = cJSON_GetObjectItem(deviceInfo, "devicePath");
+        cJSON* friendlyName = cJSON_GetObjectItem(deviceInfo, "friendlyName");
+        cJSON* manufacturer = cJSON_GetObjectItem(deviceInfo, "manufacturer");
+        cJSON* deviceDescription = cJSON_GetObjectItem(deviceInfo, "deviceDescription");
+        cJSON* classGuid = cJSON_GetObjectItem(deviceInfo, "classGuid");
+
+        strcpy(dInfo->comment, cJSON_GetStringValue(comment));
+        strcpy(dInfo->totalBytes, cJSON_GetStringValue(totalBytes));
+        strcpy(dInfo->deviceInstanceID, cJSON_GetStringValue(deviceInstanceID));
+        strcpy(dInfo->devicePath, cJSON_GetStringValue(devicePath));
+        strcpy(dInfo->friendlyName, cJSON_GetStringValue(friendlyName));
+        strcpy(dInfo->manufacturer, cJSON_GetStringValue(manufacturer));
+        strcpy(dInfo->deviceDescription, cJSON_GetStringValue(deviceDescription));
+        strcpy(dInfo->classGuid, cJSON_GetStringValue(classGuid));
+
+        cJSON_Delete(cObjRoot);
+    }
+
+    CloseConfigFile();
+    return (void*)dInfo;
+}
+
+int FindDeviceInDeviceList(char* deviceInstanceID)
+{
+    int deviceFound = 0;
+    OpenConfigFile("r");
+    if (bConfigFileOpen == TRUE)
+    {
+        dInfo = (PDeviceInfo)malloc(sizeof(DeviceInfo));
+        cJSON* cObjRoot = cJSON_Parse(gConfigData);
+
+        cJSON* cObjDeviceList = cJSON_GetObjectItemCaseSensitive(cObjRoot, "DeviceList");
+
+        for (int i = 0; i < cJSON_GetArraySize(cObjDeviceList); i++)
+        {
+            cJSON* deviceInfo = cJSON_GetArrayItem(cObjDeviceList, i);
+
+            cJSON* deviceInstanceID = cJSON_GetObjectItem(deviceInfo, "deviceInstanceID");
+
+            if (strcmp(deviceInstanceID->valuestring, deviceInstanceID) == 0)
+            {
+                deviceFound = 1;
+                break;
+            }
+        }
+
+        cJSON_Delete(cObjRoot);
+    }
+
+    CloseConfigFile();
+    return deviceFound;
+}
+
+int RemoveDeviceFromDeviceList(int index)
+{
+    int deviceDelete = 0;
+    OpenConfigFile("a+");
+    if (bConfigFileOpen == TRUE)
+    {
+        dInfo = (PDeviceInfo)malloc(sizeof(DeviceInfo));
+        cJSON* cObjRoot = cJSON_Parse(gConfigData);
+
+        cJSON* cObjDeviceList = cJSON_GetObjectItemCaseSensitive(cObjRoot, "DeviceList");
+
+        cJSON_DeleteItemFromArray(cObjDeviceList, index);
+
+        char* json_str = cJSON_Print(cObjRoot);
+        if (json_str == NULL)
+        {
+            cJSON_Delete(cObjRoot);
+            CloseConfigFile();
+            return deviceDelete;
+        }
+
+        free(gConfigData);
+        gConfigData = NULL;
+
+        int jsonLen = strlen(json_str);
+
+        gConfigData = (char*)malloc(jsonLen + 1);
+        strcpy(gConfigData, json_str);
+
+        free(json_str);
+        cJSON_Delete(cObjRoot);
+    }
+
+    CloseConfigFile();
+    return deviceDelete;
+}
+
+#pragma endregion
+
+#pragma region BlackList
+int AddDeviceToBlackList(void*)
+{
+    OpenConfigFile("a+");;
+    if (bConfigFileOpen == TRUE)
+    {
+        DeviceInfo* dInfo = (DeviceInfo*)deviceInfo;
+        cJSON* cObjRoot = cJSON_Parse(gConfigData);
+
+        cJSON* cObjBlackListArray = cJSON_GetObjectItemCaseSensitive(cObjRoot, "BlackList");
+        if (!cJSON_IsArray(cObjBlackListArray) && cJSON_IsNull(cObjBlackListArray))
+        {
+            cObjBlackListArray = cJSON_CreateArray();
+            cJSON_AddItemToObject(cObjRoot, "BlackList", cObjBlackListArray);
+        }
+
+        cJSON* newDevice = cJSON_CreateObject();
+        cJSON_AddStringToObject(newDevice, "comment", dInfo->comment);
+        cJSON_AddStringToObject(newDevice, "totalBytes", dInfo->totalBytes);
+        cJSON_AddStringToObject(newDevice, "deviceInstanceID", dInfo->deviceInstanceID);
+        cJSON_AddStringToObject(newDevice, "devicePath", dInfo->devicePath);
+        cJSON_AddStringToObject(newDevice, "friendlyName", dInfo->friendlyName);
+        cJSON_AddStringToObject(newDevice, "manufacturer", dInfo->manufacturer);
+        cJSON_AddStringToObject(newDevice, "deviceDescription", dInfo->deviceDescription);
+        cJSON_AddStringToObject(newDevice, "classGuid", dInfo->classGuid);
+
+        cJSON_AddItemToArray(cObjBlackListArray, newDevice);
+
+        char* json_str = cJSON_Print(cObjRoot);
+        
+        if (json_str == NULL)
+        {
+            cJSON_Delete(cObjRoot);
+            CloseConfigFile();
+            return -1;
+        }
+
+        free(gConfigData);
+        gConfigData = NULL;
+
+        int jsonLen = strlen(json_str);
+
+        gConfigData = (char*)malloc(jsonLen + 1);
+        strcpy(gConfigData, json_str);
+
+        free(json_str);
+        cJSON_Delete(cObjRoot);
+    }
+
+    CloseConfigFile();
+    return 0;
+}
+
+int BlackListLength()
+{
+    int blackListLen = 0;
+    OpenConfigFile("r");
+    if (bConfigFileOpen == TRUE)
+    {
+        cJSON* cObjRoot = cJSON_Parse(gConfigData);
+
+        cJSON* cObjBlackList = cJSON_GetObjectItemCaseSensitive(cObjRoot, "BlackList");
+
+        if (!cJSON_IsArray(cObjBlackList) && cJSON_IsNull(cObjBlackList))
+        {
+
+        }
+        else
+        {
+            blackListLen = cJSON_GetArraySize(cObjBlackList);
+        }
+        cJSON_Delete(cObjRoot);
+    }
+
+    CloseConfigFile();
+
+    return blackListLen;
+}
+
+void* GetBlackListItemFromIndex(int index)
+{
+    PDeviceInfo dInfo = NULL;
+    OpenConfigFile("r");
+    if (bConfigFileOpen == TRUE)
+    {
+        dInfo = (PDeviceInfo)malloc(sizeof(DeviceInfo));
+        cJSON* cObjRoot = cJSON_Parse(gConfigData);
+
+        cJSON* cObjBlackList = cJSON_GetObjectItemCaseSensitive(cObjRoot, "BlackList");
+
+        cJSON* deviceInfo = cJSON_GetArrayItem(cObjBlackList, index);
+
+        cJSON* comment = cJSON_GetObjectItem(deviceInfo, "comment");
+        cJSON* totalBytes = cJSON_GetObjectItem(deviceInfo, "totalBytes");
+        cJSON* deviceInstanceID = cJSON_GetObjectItem(deviceInfo, "deviceInstanceID");
+        cJSON* devicePath = cJSON_GetObjectItem(deviceInfo, "devicePath");
+        cJSON* friendlyName = cJSON_GetObjectItem(deviceInfo, "friendlyName");
+        cJSON* manufacturer = cJSON_GetObjectItem(deviceInfo, "manufacturer");
+        cJSON* deviceDescription = cJSON_GetObjectItem(deviceInfo, "deviceDescription");
+        cJSON* classGuid = cJSON_GetObjectItem(deviceInfo, "classGuid");
+
+        strcpy(dInfo->comment, cJSON_GetStringValue(comment));
+        strcpy(dInfo->totalBytes, cJSON_GetStringValue(totalBytes));
+        strcpy(dInfo->deviceInstanceID, cJSON_GetStringValue(deviceInstanceID));
+        strcpy(dInfo->devicePath, cJSON_GetStringValue(devicePath));
+        strcpy(dInfo->friendlyName, cJSON_GetStringValue(friendlyName));
+        strcpy(dInfo->manufacturer, cJSON_GetStringValue(manufacturer));
+        strcpy(dInfo->deviceDescription, cJSON_GetStringValue(deviceDescription));
+        strcpy(dInfo->classGuid, cJSON_GetStringValue(classGuid));
+
+        cJSON_Delete(cObjRoot);
+    }
+
+    CloseConfigFile();
+    return (void*)dInfo;
+}
+
+int FindDeviceInBlackList(char*)
+{
+    int deviceFound = 0;
+    OpenConfigFile("r");
+    if (bConfigFileOpen == TRUE)
+    {
+        dInfo = (PDeviceInfo)malloc(sizeof(DeviceInfo));
+        cJSON* cObjRoot = cJSON_Parse(gConfigData);
+
+        cJSON* cObjBlackList = cJSON_GetObjectItemCaseSensitive(cObjRoot, "BlackList");
+
+        for (int i = 0; i < cJSON_GetArraySize(cObjBlackList); i++)
+        {
+            cJSON* deviceInfo = cJSON_GetArrayItem(cObjBlackList, i);
+
+            cJSON* deviceInstanceID = cJSON_GetObjectItem(deviceInfo, "deviceInstanceID");
+
+            if (strcmp(deviceInstanceID->valuestring, deviceInstanceID) == 0)
+            {
+                deviceFound = 1;
+                break;
+            }
+        }
+
+        cJSON_Delete(cObjRoot);
+    }
+
+    CloseConfigFile();
+    return deviceFound;
+}
+
+int RemoveDeviceFromBlackList(int index)
+{
+    int deviceDelete = 0;
+    OpenConfigFile("a+");
+    if (bConfigFileOpen == TRUE)
+    {
+        cJSON* cObjRoot = cJSON_Parse(gConfigData);
+
+        cJSON* cObjBlackList = cJSON_GetObjectItemCaseSensitive(cObjRoot, "BlackList");
+
+        cJSON_DeleteItemFromArray(cObjBlackList, index);
+
+        char* json_str = cJSON_Print(cObjRoot);
+        if (json_str == NULL)
+        {
+            cJSON_Delete(cObjRoot);
+            CloseConfigFile();
+            return deviceDelete;
+        }
+
+        free(gConfigData);
+        gConfigData = NULL;
+
+        int jsonLen = strlen(json_str);
+
+        gConfigData = (char*)malloc(jsonLen + 1);
+        strcpy(gConfigData, json_str);
+
+        free(json_str);
+        cJSON_Delete(cObjRoot);
+    }
+
+    CloseConfigFile();
+    return deviceDelete;
+}
+
 #pragma endregion
 
 
