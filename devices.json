@@ -5,5 +5,61 @@
 		"emailID":	"imrans.android23@gmail.com",
 		"userName":	"imran",
 		"password":	"imran1234"
-	}
+	},
+	"DeviceList":	[{
+			"comment":	"c1",
+			"totalBytes":	"1",
+			"deviceInstanceID":	"id1",
+			"devicePath":	"p",
+			"friendlyName":	"n",
+			"manufacturer":	"m",
+			"deviceDescription":	"dd",
+			"classGuid":	"{123}"
+		}, {
+			"comment":	"c12",
+			"totalBytes":	"12",
+			"deviceInstanceID":	"id12",
+			"devicePath":	"p2",
+			"friendlyName":	"n2",
+			"manufacturer":	"m2",
+			"deviceDescription":	"dd2",
+			"classGuid":	"{1232}"
+		}, {
+			"comment":	"",
+			"totalBytes":	"8004304896",
+			"deviceInstanceID":	"USBSTOR_DISK&VEN_SANDISK&PROD_CRUZER_BLADE&REV_1.26_4C531001361106107435&0",
+			"devicePath":	"",
+			"friendlyName":	"SanDisk Cruzer Blade USB Device",
+			"manufacturer":	"(Standard disk drives)",
+			"deviceDescription":	"Disk drive",
+			"classGuid":	"{4d36e967-e325-11ce-bfc1-08002be10318}"
+		}],
+	"BlackList":	[{
+			"comment":	"c15",
+			"totalBytes":	"51",
+			"deviceInstanceID":	"5id1",
+			"devicePath":	"p5",
+			"friendlyName":	"n5",
+			"manufacturer":	"m5",
+			"deviceDescription":	"d5d",
+			"classGuid":	"{1235}"
+		}, {
+			"comment":	"c13",
+			"totalBytes":	"13",
+			"deviceInstanceID":	"id13",
+			"devicePath":	"p3",
+			"friendlyName":	"n3",
+			"manufacturer":	"m3",
+			"deviceDescription":	"3dd",
+			"classGuid":	"{1233}"
+		}, {
+			"comment":	"c12",
+			"totalBytes":	"12",
+			"deviceInstanceID":	"id12",
+			"devicePath":	"p2",
+			"friendlyName":	"n2",
+			"manufacturer":	"m2",
+			"deviceDescription":	"dd2",
+			"classGuid":	"{1232}"
+		}]
 }

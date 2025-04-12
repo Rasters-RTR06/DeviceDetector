@@ -36,25 +36,35 @@ INT_PTR CALLBACK    AboutWndProc(HWND, UINT, WPARAM, LPARAM);
 AdminInfo* gaInfo;
 
 void ProcessCommand(HWND, WPARAM, LPARAM);
+void OnAppClose();
 
 void AddMenu(HWND);
 void CreateDialogControls(HWND);
 void CreateRegistrationDialogControls(HWND);
 void CreateLoginDialogControls(HWND);
 void CreateForgotPwdControls(HWND);
+void CreateDeviceListControls(HWND);
+void CreateBlackListControls(HWND);
 
 void ShowHidePage(HWND);
 void ShowHideRegistrationPage(HWND);
 void ShowHideLoginPage(HWND);
 void ShowHideForgotPwdPage(HWND);
+void ShowHideDeviceListPage(HWND);
+void ShowHideBlackListPage(HWND);
 
 void RegisterUSBNotification(void);
 void FetchUSBDeviceDetails(void);
 
 BOOL CheckForRegisteredUser();
 int ValidateEmail(char*);
+void UpdateAttachedDeviceInPageValues(HWND);
+void UpdateBlackListedDeviceInPageValues(HWND);
+void SaveAttachedDevicesComment(HWND);
+void SaveBlackListedDevicesComment(HWND);
 
 void Start_Splash();
+void HandleBackslash(char* , char* );
 
 BOOL bRegistrationPage = FALSE;
 BOOL bLoginPage = FALSE;
@@ -70,7 +80,9 @@ HDC hSplashDC = NULL;
 HDC hMemDC = NULL;
 LONG SplashWidth, SplashHeight;
 
-
+int g_iCurrentAttachedDevice = -1;
+int g_iCurrentBlackListedDevice = -1;
+char currentComment[MAX_STR_LEN];
 
 // global variable declarations
 HWND ghwnd = NULL;
@@ -230,6 +242,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			bBlackListPage = FALSE;
 
 			bLoginPage = TRUE;
+
+			g_iCurrentAttachedDevice = 0;
+			g_iCurrentBlackListedDevice = 0;
 		}
 		else
 		{
@@ -263,7 +278,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			{
 				fprintf(gpFile, "USB device Detected successfully...!\n");
 				FetchUSBDeviceDetails(); // Ensure this function is implemented correctly
-				MessageBox(hWnd, TEXT("Device Arrival!"), TEXT("WM_DEVICECHANGE"), MB_OK | MB_ICONINFORMATION);
+				MessageBox(hWnd, TEXT("Device Arrived!"), TEXT("DeviceDetector"), MB_OK | MB_ICONINFORMATION);
+				g_iCurrentAttachedDevice = 0;
+				g_iCurrentBlackListedDevice = 0;
+
+				if (bDeviceListPage == TRUE)
+				{
+					UpdateAttachedDeviceInPageValues(hWnd);
+				}
+				if (bBlackListPage == TRUE)
+				{
+					UpdateBlackListedDeviceInPageValues(hWnd);
+				}
 			}
 		}
 		else if (wParam == DBT_DEVICEREMOVECOMPLETE)
@@ -275,7 +301,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_CTLCOLORSTATIC:
 	{
 		DWORD ctrlID = GetDlgCtrlID((HWND)lParam);
-		if (ctrlID >= IDL_FIRST_NAME || ctrlID <= IDL_FORGOT_PASSWORD)
+		if (ctrlID >= IDL_FIRST_NAME || ctrlID <= IDL_BLACKLISTEDDEVICES)
 		{
 			HDC hdc = (HDC)wParam;
 			//SetBkColor(hdc, (HBRUSH)GetStockObject(GRAY_BRUSH));
@@ -290,6 +316,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     case WM_DESTROY:
 	{
+		OnAppClose();
 		PostQuitMessage(0);
 		break;
 	}
@@ -297,6 +324,57 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
     }
 	return DefWindowProc(hWnd, message, wParam, lParam);
+}
+
+void OnAppClose()
+{
+	if (gaInfo)
+	{
+		free(gaInfo);
+		gaInfo = NULL;
+	}
+}
+
+void SaveAttachedDevicesComment(HWND hWnd)
+{
+	if (g_iCurrentAttachedDevice >= 0)
+	{
+		int inputLength = GetWindowTextLength(GetDlgItem(hWnd, IDTB_AD_COMMENT));
+		char* tempComment = (char*)malloc(inputLength + 1);
+		GetWindowText(GetDlgItem(hWnd, IDTB_AD_COMMENT), tempComment, inputLength + 1);
+
+		if (strcmp(currentComment, tempComment) != 0)
+		{
+			UpdateAttachedDeviceComment(g_iCurrentAttachedDevice, tempComment);
+		}
+
+		if (tempComment)
+		{
+			free(tempComment);
+			tempComment = NULL;
+		}
+	}
+}
+
+void SaveBlackListedDevicesComment(HWND hWnd)
+{
+	if (g_iCurrentBlackListedDevice >= 0)
+	{
+		int inputLength = GetWindowTextLength(GetDlgItem(hWnd, IDTB_BLD_COMMENT));
+		char* tempComment = (char*)malloc(inputLength + 1);
+		GetWindowText(GetDlgItem(hWnd, IDTB_BLD_COMMENT), tempComment, inputLength + 1);
+
+		if (strcmp(currentComment, tempComment) != 0)
+		{
+			UpdateBlackListedDeviceComment(g_iCurrentBlackListedDevice, tempComment);
+		}
+
+		if (tempComment)
+		{
+			free(tempComment);
+			tempComment = NULL;
+		}
+	}
 }
 
 // ========== UI Element Creation ==============
@@ -345,6 +423,12 @@ void CreateDialogControls(HWND hWnd)
 
 	//Forgot Password
 	CreateForgotPwdControls(hWnd);
+
+	//Device List
+	CreateDeviceListControls(hWnd);
+
+	//Black List
+	CreateBlackListControls(hWnd);
 }
 
 void CreateRegistrationDialogControls(HWND hWnd)
@@ -438,6 +522,155 @@ void CreateForgotPwdControls(HWND hWnd)
 		410, 320, 150, 40, hWnd,
 		(HMENU)IDBTN_CANCEL_FGTPWD, NULL, NULL);
 }
+
+void CreateDeviceListControls(HWND hWnd)
+{
+	CreateWindow(TEXT("Static"), TEXT("Attched Devices"), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE,
+		200, 60, 400, 40, hWnd,
+		(HMENU)IDL_ATTACHED_DEVICES, NULL, NULL);
+
+	CreateWindow(TEXT("Static"), TEXT("Device Name"), WS_CHILD | WS_VISIBLE,
+		250, 155, 100, 25, hWnd,
+		(HMENU)IDL_AD_DEVICE_NAME, NULL, NULL);
+	CreateWindow(TEXT("Static"), TEXT("Manufacturer"), WS_CHILD | WS_VISIBLE,
+		250, 205, 100, 25, hWnd,
+		(HMENU)IDL_AD_MANUFACTURER, NULL, NULL);
+	CreateWindow(TEXT("Static"), TEXT("Description"), WS_CHILD | WS_VISIBLE,
+		250, 255, 100, 25, hWnd,
+		(HMENU)IDL_AD_DESCRIPTION, NULL, NULL);
+	CreateWindow(TEXT("Static"), TEXT("Size"), WS_CHILD | WS_VISIBLE,
+		250, 305, 100, 25, hWnd,
+		(HMENU)IDL_AD_SIZE, NULL, NULL);
+	CreateWindow(TEXT("Static"), TEXT("Comment"), WS_CHILD | WS_VISIBLE,
+		250, 355, 100, 25, hWnd,
+		(HMENU)IDL_AD_COMMENT, NULL, NULL);
+
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY,
+		400, 150, 200, 25, hWnd,
+		(HMENU)IDTB_AD_DEVICE_NAME, NULL, NULL);
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY,
+		400, 200, 200, 25, hWnd,
+		(HMENU)IDTB_AD_MANUFACTURER, NULL, NULL);
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY,
+		400, 250, 200, 25, hWnd,
+		(HMENU)IDTB_AD_DESCRIPTION, NULL, NULL);
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY,
+		400, 300, 200, 25, hWnd,
+		(HMENU)IDTB_AD_SIZE, NULL, NULL);
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_MULTILINE,
+		400, 350, 200, 70, hWnd,
+		(HMENU)IDTB_AD_COMMENT, NULL, NULL);
+
+	CreateWindow(
+		TEXT("BUTTON"), TEXT("|<"), WS_CHILD | WS_VISIBLE | SS_CENTER,
+		400, 430, 35, 40, hWnd,
+		(HMENU)IDBTN_AD_FIRST, NULL, NULL);
+
+	CreateWindow(
+		TEXT("BUTTON"), TEXT("<"), WS_CHILD | WS_VISIBLE | SS_CENTER,
+		440, 430, 35, 40, hWnd,
+		(HMENU)IDBTN_AD_PREV, NULL, NULL);
+
+	CreateWindow(
+		TEXT("Static"), TEXT(""), WS_CHILD | WS_VISIBLE | SS_CENTER,
+		480, 440, 35, 40, hWnd,
+		(HMENU)IDL_AD_PAGE_COUNT, NULL, NULL);
+
+	CreateWindow(
+		TEXT("BUTTON"), TEXT(">"), WS_CHILD | WS_VISIBLE | SS_CENTER,
+		520, 430, 35, 40, hWnd,
+		(HMENU)IDBTN_AD_NEXT, NULL, NULL);
+
+	CreateWindow(
+		TEXT("BUTTON"), TEXT(">|"), WS_CHILD | WS_VISIBLE | SS_CENTER,
+		560, 430, 40, 40, hWnd,
+		(HMENU)IDBTN_AD_LAST, NULL, NULL);
+
+	CreateWindow(
+		TEXT("Button"), TEXT("Delete"), WS_CHILD | WS_VISIBLE | SS_CENTER,
+		400, 480, 60, 40, hWnd,
+		(HMENU)IDBTN_AD_DELETE, NULL, NULL);
+
+	CreateWindow(
+		TEXT("Button"), TEXT("Add to Black List"), WS_CHILD | WS_VISIBLE | SS_CENTER,
+		470, 480, 130, 40, hWnd,
+		(HMENU)IDBTN_AD_ADD_TO_BLD, NULL, NULL);
+}
+
+void CreateBlackListControls(HWND hWnd)
+{
+	CreateWindow(TEXT("Static"), TEXT("Black Listed Devices"), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE,
+		200, 60, 400, 40, hWnd,
+		(HMENU)IDL_BLACKLISTEDDEVICES, NULL, NULL);
+
+	CreateWindow(TEXT("Static"), TEXT("Device Name"), WS_CHILD | WS_VISIBLE,
+		250, 155, 100, 25, hWnd,
+		(HMENU)IDL_BLD_DEVICE_NAME, NULL, NULL);
+	CreateWindow(TEXT("Static"), TEXT("Manufacturer"), WS_CHILD | WS_VISIBLE,
+		250, 205, 100, 25, hWnd,
+		(HMENU)IDL_BLD_MANUFACTURER, NULL, NULL);
+	CreateWindow(TEXT("Static"), TEXT("Description"), WS_CHILD | WS_VISIBLE,
+		250, 255, 100, 25, hWnd,
+		(HMENU)IDL_BLD_DESCRIPTION, NULL, NULL);
+	CreateWindow(TEXT("Static"), TEXT("Size"), WS_CHILD | WS_VISIBLE,
+		250, 305, 100, 25, hWnd,
+		(HMENU)IDL_BLD_SIZE, NULL, NULL);
+	CreateWindow(TEXT("Static"), TEXT("Comment"), WS_CHILD | WS_VISIBLE,
+		250, 355, 100, 25, hWnd,
+		(HMENU)IDL_BLD_COMMENT, NULL, NULL);
+
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY,
+		400, 150, 200, 25, hWnd,
+		(HMENU)IDTB_BLD_DEVICE_NAME, NULL, NULL);
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY,
+		400, 200, 200, 25, hWnd,
+		(HMENU)IDTB_BLD_MANUFACTURER, NULL, NULL);
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY,
+		400, 250, 200, 25, hWnd,
+		(HMENU)IDTB_BLD_DESCRIPTION, NULL, NULL);
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY,
+		400, 300, 200, 25, hWnd,
+		(HMENU)IDTB_BLD_SIZE, NULL, NULL);
+	CreateWindow(TEXT("EDIT"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_MULTILINE,
+		400, 350, 200, 70, hWnd,
+		(HMENU)IDTB_BLD_COMMENT, NULL, NULL);
+
+	CreateWindow(
+		TEXT("BUTTON"), TEXT("|<"), WS_CHILD | WS_VISIBLE | SS_CENTER,
+		400, 430, 35, 40, hWnd,
+		(HMENU)IDBTN_BLD_FIRST, NULL, NULL);
+
+	CreateWindow(
+		TEXT("BUTTON"), TEXT("<"), WS_CHILD | WS_VISIBLE | SS_CENTER,
+		440, 430, 35, 40, hWnd,
+		(HMENU)IDBTN_BLD_PREV, NULL, NULL);
+
+	CreateWindow(
+		TEXT("Static"), TEXT(""), WS_CHILD | WS_VISIBLE | SS_CENTER,
+		480, 440, 35, 40, hWnd,
+		(HMENU)IDL_BLD_PAGE_COUNT, NULL, NULL);
+
+	CreateWindow(
+		TEXT("BUTTON"), TEXT(">"), WS_CHILD | WS_VISIBLE | SS_CENTER,
+		520, 430, 35, 40, hWnd,
+		(HMENU)IDBTN_BLD_NEXT, NULL, NULL);
+
+	CreateWindow(
+		TEXT("BUTTON"), TEXT(">|"), WS_CHILD | WS_VISIBLE | SS_CENTER,
+		560, 430, 40, 40, hWnd,
+		(HMENU)IDBTN_BLD_LAST, NULL, NULL);
+
+	/*CreateWindow(
+		TEXT("Button"), TEXT("Delete"), WS_CHILD | WS_VISIBLE | SS_CENTER | WS_BORDER,
+		400, 480, 60, 40, hWnd,
+		(HMENU)IDBTN_BLD_DELETE, NULL, NULL);*/
+
+	CreateWindow(
+		TEXT("Button"), TEXT("Remove"), WS_CHILD | WS_VISIBLE | SS_CENTER | WS_BORDER,
+		470, 480, 130, 40, hWnd,
+		(HMENU)IDBTN_BLD_DELETE, NULL, NULL);
+}
+
 #pragma endregion
 
 
@@ -455,10 +688,10 @@ void ShowHidePage(HWND hWnd)
 	ShowHideForgotPwdPage(hWnd);
 
 	//Device List Page
-	//ShowWindow(GetDlgItem(hWnd, IDD_BUTTON), bDeviceListPage);
+	ShowHideDeviceListPage(hWnd);
 
 	//Black List Page
-	//ShowWindow(GetDlgItem(hWnd, IDD_BUTTON), bBlackListPage);
+	ShowHideBlackListPage(hWnd);
 
 	InvalidateRect(hWnd, NULL, TRUE);
 	UpdateWindow(hWnd);
@@ -505,6 +738,102 @@ void ShowHideForgotPwdPage(HWND hWnd)
 	ShowWindow(GetDlgItem(hWnd, IDBTN_SEND_FGTPWD), bForgotPwdPage);
 	ShowWindow(GetDlgItem(hWnd, IDBTN_CANCEL_FGTPWD), bForgotPwdPage);
 }
+
+void ShowHideDeviceListPage(HWND hWnd)
+{
+	ShowWindow(GetDlgItem(hWnd, IDL_AD_DEVICE_NAME), bDeviceListPage);
+	ShowWindow(GetDlgItem(hWnd, IDL_AD_MANUFACTURER), bDeviceListPage);
+	ShowWindow(GetDlgItem(hWnd, IDL_AD_DESCRIPTION), bDeviceListPage);
+	ShowWindow(GetDlgItem(hWnd, IDL_AD_SIZE), bDeviceListPage);
+	ShowWindow(GetDlgItem(hWnd, IDL_AD_COMMENT), bDeviceListPage);
+	ShowWindow(GetDlgItem(hWnd, IDL_AD_PAGE_COUNT), bDeviceListPage);
+	ShowWindow(GetDlgItem(hWnd, IDL_ATTACHED_DEVICES), bDeviceListPage);
+
+	ShowWindow(GetDlgItem(hWnd, IDTB_AD_DEVICE_NAME), bDeviceListPage);
+	ShowWindow(GetDlgItem(hWnd, IDTB_AD_MANUFACTURER), bDeviceListPage);
+	ShowWindow(GetDlgItem(hWnd, IDTB_AD_DESCRIPTION), bDeviceListPage);
+	ShowWindow(GetDlgItem(hWnd, IDTB_AD_SIZE), bDeviceListPage);
+	ShowWindow(GetDlgItem(hWnd, IDTB_AD_COMMENT), bDeviceListPage);
+
+	ShowWindow(GetDlgItem(hWnd, IDBTN_AD_FIRST), bDeviceListPage);
+	ShowWindow(GetDlgItem(hWnd, IDBTN_AD_PREV), bDeviceListPage);
+	ShowWindow(GetDlgItem(hWnd, IDBTN_AD_NEXT), bDeviceListPage);
+	ShowWindow(GetDlgItem(hWnd, IDBTN_AD_LAST), bDeviceListPage);
+	ShowWindow(GetDlgItem(hWnd, IDBTN_AD_DELETE), bDeviceListPage);
+	ShowWindow(GetDlgItem(hWnd, IDBTN_AD_ADD_TO_BLD), bDeviceListPage);
+}
+
+void ShowHideBlackListPage(HWND hWnd)
+{
+	ShowWindow(GetDlgItem(hWnd, IDL_BLD_DEVICE_NAME), bBlackListPage);
+	ShowWindow(GetDlgItem(hWnd, IDL_BLD_MANUFACTURER), bBlackListPage);
+	ShowWindow(GetDlgItem(hWnd, IDL_BLD_DESCRIPTION), bBlackListPage);
+	ShowWindow(GetDlgItem(hWnd, IDL_BLD_SIZE), bBlackListPage);
+	ShowWindow(GetDlgItem(hWnd, IDL_BLD_COMMENT), bBlackListPage);
+	ShowWindow(GetDlgItem(hWnd, IDL_BLD_PAGE_COUNT), bBlackListPage);
+	ShowWindow(GetDlgItem(hWnd, IDL_BLACKLISTEDDEVICES), bBlackListPage);
+
+	ShowWindow(GetDlgItem(hWnd, IDTB_BLD_DEVICE_NAME), bBlackListPage);
+	ShowWindow(GetDlgItem(hWnd, IDTB_BLD_MANUFACTURER), bBlackListPage);
+	ShowWindow(GetDlgItem(hWnd, IDTB_BLD_DESCRIPTION), bBlackListPage);
+	ShowWindow(GetDlgItem(hWnd, IDTB_BLD_SIZE), bBlackListPage);
+	ShowWindow(GetDlgItem(hWnd, IDTB_BLD_COMMENT), bBlackListPage);
+
+	ShowWindow(GetDlgItem(hWnd, IDBTN_BLD_FIRST), bBlackListPage);
+	ShowWindow(GetDlgItem(hWnd, IDBTN_BLD_PREV), bBlackListPage);
+	ShowWindow(GetDlgItem(hWnd, IDBTN_BLD_NEXT), bBlackListPage);
+	ShowWindow(GetDlgItem(hWnd, IDBTN_BLD_LAST), bBlackListPage);
+	ShowWindow(GetDlgItem(hWnd, IDBTN_BLD_DELETE), bBlackListPage);
+}
+
+void UpdateAttachedDeviceInPageValues(HWND hWnd)
+{
+	DeviceInfo* pCurrentAttchedDevice = (DeviceInfo*)GetDeviceInfoItemFromIndex(g_iCurrentAttachedDevice);
+	
+	if (pCurrentAttchedDevice != NULL)
+	{
+		SetWindowText(GetDlgItem(hWnd, IDTB_AD_DEVICE_NAME), pCurrentAttchedDevice->friendlyName);
+		SetWindowText(GetDlgItem(hWnd, IDTB_AD_MANUFACTURER), pCurrentAttchedDevice->manufacturer);
+		SetWindowText(GetDlgItem(hWnd, IDTB_AD_DESCRIPTION), pCurrentAttchedDevice->deviceDescription);
+		SetWindowText(GetDlgItem(hWnd, IDTB_AD_SIZE), pCurrentAttchedDevice->totalBytes);
+		SetWindowText(GetDlgItem(hWnd, IDTB_AD_COMMENT), pCurrentAttchedDevice->comment);
+
+		strcpy(currentComment, pCurrentAttchedDevice->comment);
+		char buf[32];
+		sprintf(buf, "%d/%d", g_iCurrentAttachedDevice + 1, DeviceInfoListLength());
+
+		SetWindowText(GetDlgItem(hWnd, IDL_AD_PAGE_COUNT), buf);
+
+		free(pCurrentAttchedDevice);
+		pCurrentAttchedDevice = NULL;
+	}
+
+	
+}
+
+void UpdateBlackListedDeviceInPageValues(HWND hWnd)
+{
+	DeviceInfo* pCurrentBlackListedDevice = (DeviceInfo*)GetBlackListItemFromIndex(g_iCurrentBlackListedDevice);
+
+	if (pCurrentBlackListedDevice)
+	{
+		SetWindowText(GetDlgItem(hWnd, IDTB_BLD_DEVICE_NAME), pCurrentBlackListedDevice->friendlyName);
+		SetWindowText(GetDlgItem(hWnd, IDTB_BLD_MANUFACTURER), pCurrentBlackListedDevice->manufacturer);
+		SetWindowText(GetDlgItem(hWnd, IDTB_BLD_DESCRIPTION), pCurrentBlackListedDevice->deviceDescription);
+		SetWindowText(GetDlgItem(hWnd, IDTB_BLD_SIZE), pCurrentBlackListedDevice->totalBytes);
+		SetWindowText(GetDlgItem(hWnd, IDTB_BLD_COMMENT), pCurrentBlackListedDevice->comment);
+
+		strcpy(currentComment, pCurrentBlackListedDevice->comment);
+
+		char buf[32];
+		sprintf(buf, "%d/%d", g_iCurrentBlackListedDevice + 1, BlackListLength());
+
+		SetWindowText(GetDlgItem(hWnd, IDL_BLD_PAGE_COUNT), buf);
+
+		free(pCurrentBlackListedDevice);
+		pCurrentBlackListedDevice = NULL;
+	}
+}
 #pragma endregion
 
 //============== Processing of Commands =======
@@ -520,13 +849,23 @@ void ProcessCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	{
 		if (bUserRegistrationDone == TRUE && bUserLoginDone == TRUE)
 		{
-			bRegistrationPage = FALSE;
-			bLoginPage = FALSE;
-			bForgotPwdPage = FALSE;
-			bBlackListPage = FALSE;
+			if (bDeviceListPage == FALSE)
+			{
+				if (bBlackListPage == TRUE)
+				{
+					SaveBlackListedDevicesComment(hWnd);
+				}
 
-			bDeviceListPage = TRUE;
-			ShowHidePage(hWnd);
+				bRegistrationPage = FALSE;
+				bLoginPage = FALSE;
+				bForgotPwdPage = FALSE;
+				bBlackListPage = FALSE;
+
+				bDeviceListPage = TRUE;
+				g_iCurrentAttachedDevice = 0;
+				ShowHidePage(hWnd);
+				UpdateAttachedDeviceInPageValues(hWnd);
+			}
 		}
 		break;
 	}
@@ -534,13 +873,22 @@ void ProcessCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	{
 		if (bUserRegistrationDone == TRUE && bUserLoginDone == TRUE)
 		{
-			bRegistrationPage = FALSE;
-			bLoginPage = FALSE;
-			bForgotPwdPage = FALSE;
-			bDeviceListPage = FALSE;
+			if (bBlackListPage == FALSE)
+			{
+				if (bDeviceListPage == TRUE)
+				{
+					SaveAttachedDevicesComment(hWnd);
+				}
+				bRegistrationPage = FALSE;
+				bLoginPage = FALSE;
+				bForgotPwdPage = FALSE;
+				bDeviceListPage = FALSE;
 
-			bBlackListPage = TRUE;
-			ShowHidePage(hWnd);
+				bBlackListPage = TRUE;
+				g_iCurrentBlackListedDevice = 0;
+				ShowHidePage(hWnd);
+				UpdateBlackListedDeviceInPageValues(hWnd);
+			}
 		}
 		break;
 	}
@@ -551,13 +899,9 @@ void ProcessCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	}
 	case IDM_FILE_EXIT:
 	{
-		//Save Json Data to .Dat file
-		//Encrypt .Dat file 
-		//Close .Dat file
 		DestroyWindow(hWnd);
 		break;
 	}
-
 
 	//Button Commands
 	/*case IDBTN_BUTTON:
@@ -569,14 +913,6 @@ void ProcessCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	}*/
 	case IDBTN_CREATE_USER:
 	{
-		//gpRegistrationDetailsFile = fopen("UserRegistrationDetails.txt", "w");
-
-		//if (gpRegistrationDetailsFile == NULL)
-		//{
-		//	MessageBox(hWnd, TEXT("Registration Details File Creation Failed."), TEXT("File I/O Error"), MB_OK);
-		//	bUserRegistrationDone = FALSE;
-		//}
-		//else
 		{
 			int inputLength;
 			BOOL validPwd = FALSE;
@@ -658,14 +994,15 @@ void ProcessCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			bForgotPwdPage = FALSE;
 			bDeviceListPage = FALSE;
 
+			g_iCurrentAttachedDevice = 0;
+			g_iCurrentBlackListedDevice = 0;
+
 			ShowHidePage(hWnd);
 		}
 		break;
 	}
 	case IDBTN_LOGIN_USER:
 	{
-		//gpRegistrationDetailsFile = fopen("UserRegistrationDetails.txt", "r");
-
 		if (gaInfo == NULL)
 		{
 			MessageBox(hWnd, TEXT("Admin Details Not Found."), TEXT("File I/O Error"), MB_OK);
@@ -686,16 +1023,6 @@ void ProcessCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			char* passwordF = (char*)malloc(inputLength + 1);
 			GetWindowText(GetDlgItem(hWnd, IDTB_PASSWORD_LOGIN), passwordF, inputLength + 1);
 
-			/*while (fgets(line, 50, gpRegistrationDetailsFile) != NULL) {
-				if (strstr(line, "User Name: ") != NULL) {
-					sscanf(line, "User Name: %s", userName);
-				}
-
-				if (strstr(line, "Password: ") != NULL) {
-					sscanf(line, "Password: %s", password);
-				}
-			}*/
-
 			if (strcmp(gaInfo->userName, userNameF) != 0 || strcmp(gaInfo->password, passwordF) != 0) {
 				MessageBox(hWnd, TEXT("Failed to login"), TEXT("Error"), MB_OK);
 				bUserLoginDone = FALSE;
@@ -708,8 +1035,6 @@ void ProcessCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			free(userNameF);
 			free(passwordF);
 
-			//fclose(gpRegistrationDetailsFile);
-			//gpRegistrationDetailsFile = NULL;
 		}
 		if (bUserLoginDone == TRUE)
 		{
@@ -719,7 +1044,9 @@ void ProcessCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			bForgotPwdPage = FALSE;
 
 			bDeviceListPage = TRUE;
+			g_iCurrentAttachedDevice = 0;
 			ShowHidePage(hWnd);
+			UpdateAttachedDeviceInPageValues(hWnd);
 		}
 		break;
 	}
@@ -755,7 +1082,7 @@ void ProcessCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
 		if (ValidateEmail(emailID)) {
 			//Send Email to Email ID which contains Password
-			MessageBox(hWnd, TEXT("Send an Email to Forgot Password"), TEXT("Forgot Password"), MB_OK);
+			MessageBox(hWnd, TEXT("Send an Email to Forgot Password (TBD)"), TEXT("DeviceDetector"), MB_OK);
 
 			bRegistrationPage = FALSE;
 			bDeviceListPage = FALSE;
@@ -767,6 +1094,123 @@ void ProcessCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 		}
 		else {
 			MessageBox(hWnd, TEXT("Please enter valid email ID"), TEXT("Validation Error"), MB_OK);
+		}
+		break;
+	}
+	case IDBTN_AD_FIRST:
+	{
+		SaveAttachedDevicesComment(hWnd);
+		g_iCurrentAttachedDevice = 0;
+		UpdateAttachedDeviceInPageValues(hWnd);
+		break;
+	}
+	case IDBTN_AD_PREV:
+	{
+		SaveAttachedDevicesComment(hWnd);
+		g_iCurrentAttachedDevice--;
+		if (g_iCurrentAttachedDevice < 0)
+		{
+			g_iCurrentAttachedDevice = 0;
+		}
+		UpdateAttachedDeviceInPageValues(hWnd);
+		break;
+	}
+	case IDBTN_AD_NEXT:
+	{
+		SaveAttachedDevicesComment(hWnd);
+		g_iCurrentAttachedDevice++;
+		int maxItem = DeviceInfoListLength();
+		if (g_iCurrentAttachedDevice == maxItem)
+		{
+			g_iCurrentAttachedDevice = maxItem - 1;
+		}
+		UpdateAttachedDeviceInPageValues(hWnd);
+		break;
+	}
+	case IDBTN_AD_LAST:
+	{
+		SaveAttachedDevicesComment(hWnd);
+		g_iCurrentAttachedDevice = DeviceInfoListLength() - 1;
+		UpdateAttachedDeviceInPageValues(hWnd);
+		break;
+	}
+	case IDBTN_AD_DELETE:
+	{
+		if (RemoveDeviceFromDeviceList(g_iCurrentAttachedDevice) == 1)
+		{
+			MessageBox(hWnd, TEXT("Device Info removed successfully"), TEXT("DeviceDetector"), MB_OK);
+			g_iCurrentAttachedDevice = 0;
+			UpdateAttachedDeviceInPageValues(hWnd);
+		}
+		break;
+	}
+	case IDBTN_AD_ADD_TO_BLD:
+	{
+		DeviceInfo* dInfo = (DeviceInfo*)GetDeviceInfoItemFromIndex(g_iCurrentAttachedDevice);
+		if (FindDeviceInBlackList(dInfo->deviceInstanceID) == 0) // not present in Black List
+		{
+			SaveAttachedDevicesComment(hWnd);
+			if (AddDeviceToBlackList(dInfo) == 0)
+			{
+				MessageBox(hWnd, TEXT("Device Black Listed successfully"), TEXT("DeviceDetector"), MB_OK);
+			}
+		}
+		else
+		{
+			// already in Black list
+		}
+		if (dInfo)
+		{
+			free(dInfo);
+			dInfo = NULL;
+		}
+
+		break;
+	}
+	case IDBTN_BLD_FIRST:
+	{
+		SaveBlackListedDevicesComment(hWnd);
+		g_iCurrentBlackListedDevice = 0;
+		UpdateBlackListedDeviceInPageValues(hWnd);
+		break;
+	}
+	case IDBTN_BLD_PREV:
+	{
+		SaveBlackListedDevicesComment(hWnd);
+		g_iCurrentBlackListedDevice--;
+		if (g_iCurrentBlackListedDevice < 0)
+		{
+			g_iCurrentBlackListedDevice = 0;
+		}
+		UpdateBlackListedDeviceInPageValues(hWnd);
+		break;
+	}
+	case IDBTN_BLD_NEXT:
+	{
+		SaveBlackListedDevicesComment(hWnd);
+		g_iCurrentBlackListedDevice++;
+		int maxItem = BlackListLength();
+		if (g_iCurrentBlackListedDevice == maxItem)
+		{
+			g_iCurrentBlackListedDevice = maxItem - 1;
+		}
+		UpdateBlackListedDeviceInPageValues(hWnd);
+		break;
+	}
+	case IDBTN_BLD_LAST:
+	{
+		SaveBlackListedDevicesComment(hWnd);
+		g_iCurrentBlackListedDevice = BlackListLength() - 1;
+		UpdateBlackListedDeviceInPageValues(hWnd);
+		break;
+	}
+	case IDBTN_BLD_DELETE:
+	{
+		if (RemoveDeviceFromBlackList(g_iCurrentBlackListedDevice) == 1)
+		{
+			MessageBox(hWnd, TEXT("Device removed from Black List successfully"), TEXT("DeviceDetector"), MB_OK);
+			g_iCurrentBlackListedDevice = 0;
+			UpdateBlackListedDeviceInPageValues(hWnd);
 		}
 		break;
 	}
@@ -785,12 +1229,10 @@ BOOL CheckForRegisteredUser()
 
 	if (gaInfo != NULL)
 	{
-		MessageBox(NULL, TEXT("Admin Found"), TEXT("Validation Error"), MB_OK);
 		return TRUE;
 	}
 	else
 	{
-		MessageBox(NULL, TEXT("Admin Not Found"), TEXT("Validation Error"), MB_OK);
 		return FALSE;
 	}
 }
@@ -828,6 +1270,26 @@ int ValidateEmail(char* email)
 
 //========== USB Related ==============
 #pragma region USB Related
+
+void HandleBackslash(char* withBackslash, char* withoutBackslash)
+{	
+	while (*withBackslash)
+	{
+		if (*withBackslash == '\\')
+		{
+			*withoutBackslash = '_';
+			*withoutBackslash++;
+		}
+		else
+		{
+			*withoutBackslash++ = *withBackslash;
+		}
+		withBackslash++;
+	}
+	*withoutBackslash = '\0';
+}
+
+
 void RegisterUSBNotification(void)
 {
 	// Device Detection releated variable's
@@ -879,6 +1341,7 @@ void FetchUSBDeviceDetails(void)
 
 		// Buffer to hold the unique ID
 		char deviceInstanceID[MAX_DEVICE_ID_LEN];
+		char devInstanceIDWithoutBackslash[MAX_DEVICE_ID_LEN];
 
 		//If we can't get instance ID (and it's not because of insufficient buffer length), silently skip to the next device
 		// Retrieve the Device Instance ID (Parent Value)
@@ -891,10 +1354,12 @@ void FetchUSBDeviceDetails(void)
 		BOOL deviceLogged = FALSE;
 		BOOL deviceBlackListed = FALSE;
 
-		deviceLogged = (FindDeviceInDeviceList(deviceInstanceID) == 1) ? TRUE : FALSE;
+		HandleBackslash(deviceInstanceID, devInstanceIDWithoutBackslash);
+
+		deviceLogged = (FindDeviceInDeviceList(devInstanceIDWithoutBackslash) == 1) ? TRUE : FALSE;
 		if (deviceLogged == TRUE)
 		{
-			deviceBlackListed = (FindDeviceInBlackList(deviceInstanceID) == 1) ? TRUE : FALSE;
+			deviceBlackListed = (FindDeviceInBlackList(devInstanceIDWithoutBackslash) == 1) ? TRUE : FALSE;
 		}
 
 		// Try to get the device interface data
@@ -971,8 +1436,8 @@ void FetchUSBDeviceDetails(void)
 							}
 
 							// Log device info
-							strcpy(deviceInfo->deviceInstanceID, deviceInstanceID);
-							strcpy(deviceInfo->devicePath, dev_int_detail_ptr->DevicePath);
+							strcpy(deviceInfo->deviceInstanceID, devInstanceIDWithoutBackslash);
+							strcpy(deviceInfo->devicePath, "");
 							sprintf(deviceInfo->totalBytes, "%lld", storage_geometry->DiskSize.QuadPart);
 
 							fprintf(gpFile, "Parent Value (Unique ID): %s\n", deviceInfo->deviceInstanceID);
@@ -983,6 +1448,7 @@ void FetchUSBDeviceDetails(void)
 							fprintf(gpFile, "Total bytes : %s\n", deviceInfo->totalBytes);
 							fprintf(gpFile, "Device Path : %s\n", deviceInfo->devicePath);
 
+							AddDeviceToDeviceInfoList(deviceInfo);
 							free(deviceInfo);
 						}
 						else
@@ -1010,12 +1476,7 @@ void FetchUSBDeviceDetails(void)
 }
 #pragma endregion
 
-
-
-
 #pragma region SplashScreen
-
-
 
 void Start_Splash()
 {
@@ -1049,11 +1510,8 @@ void Start_Splash()
 
 	if (!hSplashBMP)
 	{
-
-		MessageBox(NULL, "Failed To Load Bitmap", "Error", MB_OK | MB_ICONERROR);
-
+		MessageBox(NULL, TEXT("Failed To Load Bitmap"), TEXT("Error"), MB_OK | MB_ICONERROR);
 		return;
-
 	}
 
 	BITMAP Bitmap;
@@ -1144,8 +1602,6 @@ LRESULT CALLBACK SplashScreenWndProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 
 // ====== About Dlg Box ===========
 #pragma region About Dlg Box
-
-
 
 // Message handler for about box.
 INT_PTR CALLBACK AboutWndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)

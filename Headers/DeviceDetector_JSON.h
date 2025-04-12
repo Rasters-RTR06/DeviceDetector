@@ -35,6 +35,7 @@
     void* GetDeviceInfoItemFromIndex(int);
     int FindDeviceInDeviceList(char*);
     int RemoveDeviceFromDeviceList(int);
+    int UpdateAttachedDeviceComment(int, char*);
 
 
     int AddDeviceToBlackList(void*);
@@ -42,6 +43,7 @@
     void* GetBlackListItemFromIndex(int);
     int FindDeviceInBlackList(char*);
     int RemoveDeviceFromBlackList(int);
+    int UpdateBlackListedDeviceComment(int, char*);
 
 //#ifdef __cplusplus
 //}
