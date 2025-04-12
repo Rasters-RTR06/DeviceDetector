@@ -292,9 +292,67 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 			}
 		}
+		else if (wParam == DBT_DEVICEQUERYREMOVE)
+		{
+			pDBHdr = (PDEV_BROADCAST_HDR)lParam;
+			switch (pDBHdr->dbch_devicetype)
+			{
+			case DBT_DEVTYP_HANDLE:
+				// A request has been made to remove the device;
+				// close any open handles to the file or device
+
+				pDBHandle = (PDEV_BROADCAST_HANDLE)pDBHdr;
+				if (hFile != INVALID_HANDLE_VALUE)
+				{
+					CloseHandle(hFile);
+					hFile = INVALID_HANDLE_VALUE;
+				}
+			}
+			//return TRUE;
+		}
+		else if (wParam == DBT_DEVICEREMOVEPENDING)
+		{
+			pDBHdr = (PDEV_BROADCAST_HDR)lParam;
+			switch (pDBHdr->dbch_devicetype)
+			{
+			case DBT_DEVTYP_HANDLE:
+
+				// The device is being removed;
+				// close any open handles to the file or device
+
+				if (hFile != INVALID_HANDLE_VALUE)
+				{
+					CloseHandle(hFile);
+					hFile = INVALID_HANDLE_VALUE;
+				}
+
+			}
+		}
 		else if (wParam == DBT_DEVICEREMOVECOMPLETE)
 		{
+			pDBHdr = (PDEV_BROADCAST_HDR)lParam;
+			switch (pDBHdr->dbch_devicetype)
+			{
+			case DBT_DEVTYP_HANDLE:
+				pDBHandle = (PDEV_BROADCAST_HANDLE)pDBHdr;
+				// The device has been removed from the system;
+				// unregister its notification handle
+
+				UnregisterDeviceNotification(
+					pDBHandle->dbch_hdevnotify);
+
+				// The device has been removed;
+				// close any remaining open handles to the file or device
+
+				if (hFile != INVALID_HANDLE_VALUE)
+				{
+					CloseHandle(hFile);
+					hFile = INVALID_HANDLE_VALUE;
+				}
+
+			}
 			fprintf(gpFile, "USB device removed successfully...!\n");
+			return TRUE;
 		}
 		break;
 	}
